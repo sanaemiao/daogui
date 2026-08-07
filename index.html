@@ -1421,10 +1421,12 @@ function drawEffect(ef){
  if(ef.type==='tentacle'){
   ctx.globalAlpha=clamp(ef.life/ef.maxLife,0,1);ctx.translate(p.x,p.y);ctx.rotate(ef.angle);ctx.lineCap='round';
   const bend=Math.sin((ef.angle||0)*3+state.time*10)*ef.width*.72;
-  ctx.strokeStyle=ef.liSui?'rgba(225,216,199,.82)':'rgba(214,197,161,.58)';ctx.lineWidth=ef.width+9;ctx.beginPath();ctx.moveTo(5,0);ctx.bezierCurveTo(ef.r*.28,-ef.width*.8,ef.r*.6,bend,ef.r,0);ctx.stroke();
+  ctx.strokeStyle=ef.liSui?'rgba(80,70,65,.6)':'rgba(60,50,45,.45)';ctx.lineWidth=ef.width+9;ctx.beginPath();ctx.moveTo(5,0);ctx.bezierCurveTo(ef.r*.28,-ef.width*.8,ef.r*.6,bend,ef.r,0);ctx.stroke();
   ctx.strokeStyle=ef.color;ctx.lineWidth=ef.width;ctx.beginPath();ctx.moveTo(5,0);ctx.bezierCurveTo(ef.r*.28,-ef.width*.8,ef.r*.6,bend,ef.r,0);ctx.stroke();
   ctx.strokeStyle=ef.liSui?'rgba(167,57,56,.82)':'rgba(92,54,48,.72)';ctx.lineWidth=Math.max(2,ef.width*.18);ctx.beginPath();ctx.moveTo(8,-2);ctx.bezierCurveTo(ef.r*.28,-ef.width*.55,ef.r*.62,bend*.8,ef.r-4,-1);ctx.stroke();
   ctx.strokeStyle='rgba(8,7,7,.76)';ctx.lineWidth=Math.max(3,ef.width*.38);ctx.beginPath();ctx.moveTo(14,ef.width*.36);ctx.bezierCurveTo(ef.r*.32,ef.width*1.1,ef.r*.66,-bend*.55,ef.r*.88,ef.width*.24);ctx.stroke();
+  // 湿亮高光
+  if(!ef.liSui){ctx.strokeStyle='rgba(120,70,60,.35)';ctx.lineWidth=Math.max(1.2,ef.width*.08);ctx.beginPath();ctx.moveTo(14,ef.width*.18);ctx.bezierCurveTo(ef.r*.38,ef.width*.4,ef.r*.7,-bend*.3,ef.r*.92,ef.width*.1);ctx.stroke()}
  }
  if(ef.type==='daqian'){
   const progress=1-ef.life/ef.maxLife;ctx.globalAlpha=clamp(ef.life/ef.maxLife,.06,.7);
