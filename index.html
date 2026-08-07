@@ -14,6 +14,7 @@ canvas{display:block;width:100vw;height:100vh;background:radial-gradient(circle,
 #pauseBtn{display:none;position:fixed;right:10px;bottom:98px;z-index:15;width:52px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.45);color:#eee;font-size:14px}
 #dodgeBtn{display:none;position:fixed;right:10px;bottom:140px;z-index:15;width:52px;height:52px;border-radius:50%;border:2px solid rgba(200,180,140,.4);background:rgba(0,0,0,.55);color:#e8d5b0;font-size:13px;font-weight:bold;pointer-events:auto}
 #muteBtn{display:none;position:fixed;right:10px;bottom:200px;z-index:15;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.4);color:#ccc;font-size:16px;pointer-events:auto}
+#ultBtn{display:none;position:fixed;left:22px;top:calc(100vh - 240px);z-index:15;width:60px;height:40px;border-radius:10px;border:2px solid rgba(220,180,80,.45);background:rgba(0,0,0,.55);color:#ffd700;font-size:12px;font-weight:bold;pointer-events:auto}
 #joystick{position:fixed;left:22px;top:calc(100vh - 128px);z-index:15;width:96px;height:96px;opacity:.28;transition:opacity .12s;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)}
 #stick{position:absolute;left:32px;top:32px;width:32px;height:32px;border-radius:50%;background:rgba(255,220,170,.58);box-shadow:0 0 18px rgba(255,210,150,.3)}
 #controlsHint{display:none;position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:10;padding:7px 12px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(0,0,0,.36);color:#cdbda9;font-size:12px;pointer-events:none;white-space:nowrap}
@@ -56,6 +57,7 @@ canvas{display:block;width:100vw;height:100vh;background:radial-gradient(circle,
 <button id="pauseBtn">暂停</button>
 <button id="dodgeBtn">闪</button>
 <button id="muteBtn">🔊</button>
+<button id="ultBtn">置闰五行</button>
 <div id="joystick"><div id="stick"></div></div>
 
 <div id="startPanel">
@@ -117,7 +119,7 @@ const ui=document.getElementById('ui'),skillsUi=document.getElementById('skills'
 const debugHud=document.getElementById('debugHud');
 const startPanel=document.getElementById('startPanel'),levelPanel=document.getElementById('levelPanel'),levelOptions=document.getElementById('levelOptions');
 const endPanel=document.getElementById('endPanel'),endTitle=document.getElementById('endTitle'),endText=document.getElementById('endText'),restartBtn=document.getElementById('restartBtn');
-const pauseBtn=document.getElementById('pauseBtn'),dodgeBtn=document.getElementById('dodgeBtn'),muteBtn=document.getElementById('muteBtn'),joystick=document.getElementById('joystick'),stick=document.getElementById('stick');
+const pauseBtn=document.getElementById('pauseBtn'),dodgeBtn=document.getElementById('dodgeBtn'),muteBtn=document.getElementById('muteBtn'),ultBtn=document.getElementById('ultBtn'),joystick=document.getElementById('joystick'),stick=document.getElementById('stick');
 
 const ENEMY_SPRITES=Object.fromEntries(Object.entries(CONFIG.sprites).map(([id,def])=>[id,{...def}]));
 for(const def of Object.values(ENEMY_SPRITES)){def.image=new Image();def.image.src=def.src}
@@ -182,6 +184,7 @@ addEventListener('keydown',e=>{
  keys.add(k);
  if((e.code==='Space'||k==='p'||k==='escape')&&!e.repeat)togglePause();
  if(k==='shift'&&!e.repeat)triggerDodge();
+ if(k==='q'&&!e.repeat)triggerUltimate();
 });
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 
@@ -269,7 +272,7 @@ const playWidth=()=>Math.min(innerWidth,1280);
 const playHeight=()=>Math.min(innerHeight,800);
 
 const player={
- x:0,y:0,r:15,hp:125,maxHp:125,speed:230,level:1,exp:0,needExp:36,atk:1,regenPercent:0,pickup:82,invuln:0,waxShield:0,facing:1,dodgeCd:0,dodgeActive:0,
+ x:0,y:0,r:15,hp:125,maxHp:125,speed:230,level:1,exp:0,needExp:36,atk:1,regenPercent:0,pickup:82,invuln:0,waxShield:0,facing:1,dodgeCd:0,dodgeActive:0,ultimate:{cd:0,charging:false,chargeTimer:0},
  sacrifice:{last:0,total:0,lastAt:-999,pending:0,tick:CONFIG.sacrifice.ledgerInterval},
  states:{bewildered:false,canDamage:true,canPassEnemies:false,opacity:1},
  weapons:{
@@ -1088,6 +1091,12 @@ function update(dt){
  if(player.dodgeActive>0){state.playerTrail.push({x:player.x,y:player.y,life:.22});if(state.playerTrail.length>5)state.playerTrail.shift()}else{for(const t of state.playerTrail)t.life-=dt;for(let i=state.playerTrail.length-1;i>=0;i--)if(state.playerTrail[i].life<=0)state.playerTrail.splice(i,1)}
  dodgeBtn.style.opacity=player.dodgeCd>0?.35:1;
  state.time+=dt;
+ if(!state.leveling&&!state.paused){
+  if(player.ultimate.charging){player.ultimate.chargeTimer+=dt;if(player.ultimate.chargeTimer>=8)triggerUltimateBurst()}
+  else player.ultimate.cd=Math.max(0,player.ultimate.cd-dt);
+  // 置闰五行蓄势五色法阵
+  if(player.ultimate.charging&&state.time%0.15<dt){const prog=player.ultimate.chargeTimer/8,colors=['#e8d58a','#d4a55a','#c87840','#a0c8c0','#8098a0'];state.effects.push({type:'ring',x:player.x+Math.cos(prog*Math.PI*6)*Math.sin(prog*8)*18,y:player.y+Math.sin(prog*Math.PI*6)*Math.sin(prog*8)*18,r:60+prog*240,life:.35,maxLife:.35,color:colors[Math.floor(prog*5)%5]})}
+ }
  let dx=0,dy=0;
  if(keys.has('w')||keys.has('arrowup'))dy-=1;if(keys.has('s')||keys.has('arrowdown'))dy+=1;if(keys.has('a')||keys.has('arrowleft'))dx-=1;if(keys.has('d')||keys.has('arrowright'))dx+=1;
  const keyLen=Math.hypot(dx,dy);
@@ -1515,7 +1524,8 @@ function updateUI(){
  const nextLine=next?`${formatClock(next.at)} ${next.label}`:'击败丹阳子';
  const sacrificePerMinute=player.hp*CONFIG.sacrifice.daqianluDrainPerSecond*60;
  const sacrificeLine=player.weapons.blood.lv>0?`<br>献祭 ${sacrificePerMinute.toFixed(1)}/分 · 本局 ${player.sacrifice.total.toFixed(2)}<br><span style="color:#ff6b60">每秒祭损 ${(player.hp*CONFIG.sacrifice.daqianluDrainPerSecond).toFixed(2)}</span>`:'';
- ui.innerHTML=`血 ${Math.ceil(player.hp)}/${player.maxHp}<br>回 ${(player.regenPercent*100).toFixed(2)}%/s${sacrificeLine}<br>Lv ${player.level}<br>散炁 ${Math.floor(player.exp)}/${player.needExp} · 先天一炁<br>${mm}:${ss}<br>杀 ${state.kill}<br>阶段 ${phase.label}<br>压力 ×${phase.spawnMult.toFixed(2)}<br>下一节点 ${nextLine}`;
+ const ult=player.ultimate;const ultLine=ult.charging?`<br><span style="color:#ffd700">置闰五行 蓄势 ${ult.chargeTimer.toFixed(1)}/8.0s</span>`:(ult.cd>0?`<br><span style="color:#888">置闰五行 CD ${ult.cd.toFixed(0)}s</span>`:'<br><span style="color:#ffd700">置闰五行 Q就绪</span>');
+ ui.innerHTML=`血 ${Math.ceil(player.hp)}/${player.maxHp}<br>回 ${(player.regenPercent*100).toFixed(2)}%/s${sacrificeLine}${ultLine}<br>Lv ${player.level}<br>散炁 ${Math.floor(player.exp)}/${player.needExp} · 先天一炁<br>${mm}:${ss}<br>杀 ${state.kill}<br>阶段 ${phase.label}<br>压力 ×${phase.spawnMult.toFixed(2)}<br>下一节点 ${nextLine}`;
  const ws=Object.values(player.weapons).filter(w=>w.lv>0).map(w=>`${w.evolved?'★':''}${w.name} Lv${w.lv}`);
  const ps=Object.values(player.passives).filter(p=>p.lv>0).map(p=>`${p.name} Lv${p.lv}`);
  skillsUi.innerHTML=`<b>武器</b><br>${ws.join('<br>')||'无'}<br><br><b>被动</b><br>${ps.join('<br>')||'无'}`;
@@ -1529,6 +1539,7 @@ function updateDebugHud(force=false){
  debugHud.textContent=`FPS ${perf.fps}\n阶段 ${phase.label} ×${phase.spawnMult.toFixed(2)} 批${phase.batch} 软限${phase.softCap}\n事件 ${state.nextFlowEvent}/${FLOW_EVENTS.length}\n位置 ${Math.round(player.x)}, ${Math.round(player.y)}\n敌 ${state.enemies.length}/${MAX_ENEMIES}\n我弹 ${state.bullets.length}/${LIMITS.bullets}\n敌弹 ${state.enemyBullets.length}/${LIMITS.enemyBullets}\n特效 ${state.effects.length}/${LIMITS.effects}\n掉落 ${state.gems.length}/${LIMITS.gems}\n任务 ${state.tasks.length}`;
 }
 dodgeBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();triggerDodge()});
+ultBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();triggerUltimate()});
 function triggerDodge(){
  if(!state.started||state.paused||state.leveling||state.gameOver)return;
  if(player.dodgeCd>0)return;
@@ -1543,6 +1554,25 @@ function triggerDodge(){
  sfx.dodge();
  showMessage('闪避');
 }
+function triggerUltimate(){
+ if(!state.started||state.paused||state.leveling||state.gameOver)return;
+ if(player.ultimate.charging||player.ultimate.cd>0)return;
+ const cost=player.hp*CONFIG.sacrifice.ultimateRatio;
+ if(player.hp<=CONFIG.sacrifice.minHp)return;
+ COMBAT.takePlayerDamage(player,cost,DAMAGE.SACRIFICE,{minHp:CONFIG.sacrifice.minHp});
+ player.ultimate.charging=true;player.ultimate.chargeTimer=0;player.ultimate.cd=60;
+ showMessage('置闰五行·蓄势');
+ sfx.boss();
+}
+function triggerUltimateBurst(){
+ player.ultimate.charging=false;player.ultimate.chargeTimer=0;
+ const radius=300*areaMul(),dmg=80*atkMul();
+ state.effects.push({type:'ring',x:player.x,y:player.y,r:radius,life:.8,maxLife:.8,color:'rgba(200,180,100,.7)',text:'置闰五行'});
+ state.shakeX=rand(-5,5);state.shakeY=rand(-4,4);state.hitstop=.06;
+ for(let i=0;i<20;i++){const a=Math.random()*Math.PI*2,d=Math.random()*radius;state.effects.push({type:'killSpark',x:player.x+Math.cos(a)*d,y:player.y+Math.sin(a)*d,vx:Math.cos(a)*rand(40,120),vy:Math.sin(a)*rand(40,120),life:rand(.4,.9),maxLife:.9,color:['#e8d58a','#d4a55a','#c87840','#a0c8c0','#8098a0'][Math.floor(Math.random()*5)],size:rand(2,6)})}
+ for(const e of [...state.enemies]){if(Math.hypot(player.x-e.x,player.y-e.y)<radius+e.r){damageEnemy(e,dmg);e.slow=1}}
+ showMessage('五行爆发！');
+}
 function togglePause(){if(!state.started||state.leveling||state.gameOver)return;state.paused=!state.paused;pauseBtn.textContent=state.paused?'继续':'暂停';showMessage(state.paused?'暂停':'继续')}
 function autoPause(reason){
  keys.clear();resetStick();
@@ -1553,7 +1583,7 @@ function autoPause(reason){
 }
 addEventListener('blur',()=>autoPause('窗口失去焦点'));
 document.addEventListener('visibilitychange',()=>{if(document.hidden)autoPause('切到后台')});
-function endGame(win,text){if(state.gameOver)return;state.gameOver=true;state.paused=true;state.tasks.length=0;player.hp=Math.max(0,player.hp);keys.clear();resetStick();pauseBtn.style.display='none';dodgeBtn.style.display='none';muteBtn.style.display='none';updateUI();endTitle.textContent=win?'通关':'游戏结束';const t=Math.floor(state.time);endText.innerHTML=`${text}<br><br>存活时间：${Math.floor(t/60)}分${t%60}秒<br>击杀：${state.kill}<br>等级：${player.level}`;endPanel.style.display='flex';sfx.end()}
+function endGame(win,text){if(state.gameOver)return;state.gameOver=true;state.paused=true;state.tasks.length=0;player.hp=Math.max(0,player.hp);keys.clear();resetStick();pauseBtn.style.display='none';dodgeBtn.style.display='none';muteBtn.style.display='none';ultBtn.style.display='none';updateUI();endTitle.textContent=win?'通关':'游戏结束';const t=Math.floor(state.time);endText.innerHTML=`${text}<br><br>存活时间：${Math.floor(t/60)}分${t%60}秒<br>击杀：${state.kill}<br>等级：${player.level}`;endPanel.style.display='flex';sfx.end()}
 pauseBtn.onclick=togglePause;
 function resetPlayerForNewRun(){
  const fresh=JSON.parse(JSON.stringify(INITIAL_PLAYER_STATE));
@@ -1571,7 +1601,7 @@ function startNewRun(){
  document.querySelectorAll('.skipExtra').forEach(el=>el.remove());
  startPanel.style.display='none';levelPanel.style.display='none';endPanel.style.display='none';
  pauseBtn.style.display='block';pauseBtn.textContent='暂停';
- if(!window.matchMedia('(pointer:fine) and (min-width:900px)').matches){dodgeBtn.style.display='block';muteBtn.style.display='block'}
+ if(!window.matchMedia('(pointer:fine) and (min-width:900px)').matches){dodgeBtn.style.display='block';muteBtn.style.display='block';ultBtn.style.display='block'}
  muteBtn.style.display='block';
  last=performance.now();updateUI();showMessage('荒村起雾。');
 }
