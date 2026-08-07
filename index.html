@@ -547,8 +547,8 @@ function debugJumpToNextNode(){
  if(target>=110)player.weapons.you.lv=Math.max(player.weapons.you.lv,2);
  if(target>=230)player.weapons.suisui.lv=Math.max(player.weapons.suisui.lv,2);
  if(target>=350)player.weapons.blood.lv=Math.max(player.weapons.blood.lv,1);
- if(target>=470){player.weapons.coin.lv=Math.max(player.weapons.coin.lv,3);player.weapons.you.lv=Math.max(player.weapons.you.lv,3);player.weapons.suisui.lv=Math.max(player.weapons.suisui.lv,4);player.weapons.suisui.form='lisui';player.weapons.fire.lv=Math.max(player.weapons.fire.lv,2);player.weapons.blood.lv=Math.max(player.weapons.blood.lv,3);player.weapons.general.lv=Math.max(player.weapons.general.lv,2)}
- if(target>=590){player.weapons.coin.lv=Math.max(player.weapons.coin.lv,7);player.weapons.you.lv=Math.max(player.weapons.you.lv,5);player.weapons.suisui.lv=Math.max(player.weapons.suisui.lv,7);player.weapons.suisui.form='lisui';player.weapons.fire.lv=Math.max(player.weapons.fire.lv,5);player.weapons.blood.lv=Math.max(player.weapons.blood.lv,6);player.weapons.general.lv=Math.max(player.weapons.general.lv,5)}
+ if(target>=470){player.weapons.coin.lv=Math.max(player.weapons.coin.lv,3);player.weapons.you.lv=Math.max(player.weapons.you.lv,3);player.weapons.suisui.lv=Math.max(player.weapons.suisui.lv,4);player.weapons.fire.lv=Math.max(player.weapons.fire.lv,2);player.weapons.blood.lv=Math.max(player.weapons.blood.lv,3);player.weapons.general.lv=Math.max(player.weapons.general.lv,2)}
+ if(target>=590){player.weapons.coin.lv=Math.max(player.weapons.coin.lv,7);player.weapons.you.lv=Math.max(player.weapons.you.lv,5);player.weapons.suisui.lv=Math.max(player.weapons.suisui.lv,7);player.weapons.fire.lv=Math.max(player.weapons.fire.lv,5);player.weapons.blood.lv=Math.max(player.weapons.blood.lv,6);player.weapons.general.lv=Math.max(player.weapons.general.lv,5)}
  for(const key of ACTIVE_WEAPON_KEYS)updateWeaponName(key);
  showMessage(`调试跳转：${formatClock(target)}`);
  updateUI();
@@ -707,33 +707,35 @@ function useYouLaoYe(dt){
 function useSuisui(dt){
  const w=player.weapons.suisui;if(w.lv<=0)return;w.cd-=dt;if(w.cd>0)return;
  const target=nearest(520);if(!target)return;
- if(w.form!=='black'){
-  const finalForm=w.form==='xuanpin',grabRange=finalForm?520:390,targetCount=finalForm?8:5;
+ // Lv7 玄牝：缠取+收束
+ if(w.form==='xuanpin'){
+  const grabRange=520,targetCount=8;
   const targets=[...state.enemies].filter(e=>Math.hypot(player.x-e.x,player.y-e.y)<grabRange).sort((a,b)=>Math.hypot(player.x-a.x,player.y-a.y)-Math.hypot(player.x-b.x,player.y-b.y)).slice(0,targetCount);
-  w.castUntil=state.time+(finalForm?.9:.62);
+  w.castUntil=state.time+.9;
   for(const enemy of targets){
-   const before={x:enemy.x,y:enemy.y},a=Math.atan2(player.y-enemy.y,player.x-enemy.x);damageEnemy(enemy,(finalForm?55:42)*atkMul());
-   if(!enemy.dead){const pull=finalForm?78:52;enemy.x+=Math.cos(a)*pull;enemy.y+=Math.sin(a)*pull;enemy.slow=Math.max(enemy.slow,finalForm?1:.7)}
-   state.effects.push({type:'liSuiGrab',x:player.x,y:player.y,targetX:before.x,targetY:before.y,life:finalForm?.62:.48,maxLife:finalForm?.62:.48,seed:Math.random()*8,xuanpin:finalForm});
+   const before={x:enemy.x,y:enemy.y},a=Math.atan2(player.y-enemy.y,player.x-enemy.x);damageEnemy(enemy,55*atkMul());
+   if(!enemy.dead){const pull=78;enemy.x+=Math.cos(a)*pull;enemy.y+=Math.sin(a)*pull;enemy.slow=Math.max(enemy.slow,1)}
+   state.effects.push({type:'liSuiGrab',x:player.x,y:player.y,targetX:before.x,targetY:before.y,life:.62,maxLife:.62,seed:Math.random()*8,xuanpin:true});
   }
-  scheduleGameTask(finalForm?340:260,()=>{if(state.gameOver)return;const r=(finalForm?184:128)*areaMul();for(const enemy of [...state.enemies])if(Math.hypot(player.x-enemy.x,player.y-enemy.y)<r+enemy.r){damageEnemy(enemy,(finalForm?48:30)*atkMul());enemy.slow=Math.max(enemy.slow,finalForm?.9:.55)}state.effects.push({type:'liSuiConverge',x:player.x,y:player.y,r,life:finalForm?.9:.6,maxLife:finalForm?.9:.6,xuanpin:finalForm})});
-  w.cd=(finalForm?2.35:2.85)*cdMul();return;
+  scheduleGameTask(340,()=>{if(state.gameOver)return;const r=184*areaMul();for(const enemy of [...state.enemies])if(Math.hypot(player.x-enemy.x,player.y-enemy.y)<r+enemy.r){damageEnemy(enemy,48*atkMul());enemy.slow=Math.max(enemy.slow,.9)}state.effects.push({type:'liSuiConverge',x:player.x,y:player.y,r,life:.9,maxLife:.9,xuanpin:true})});
+  w.cd=2.35*cdMul();return;
  }
- const lashes=1+(w.lv>=3?1:0)+(w.lv>=6?1:0)+(w.evolved?2:0);
- const dmg=(34+(w.lv>=2?12:0)+(w.lv>=5?18:0)+(w.evolved?24:0))*atkMul();
- const length=(150+(w.lv>=2?24:0)+(w.lv>=4?28:0)+(w.evolved?48:0))*areaMul();
- const width=(26+(w.lv>=3?6:0)+(w.lv>=6?5:0))*areaMul();
+ // Lv1-6 触手扫击
+ const lashes=1+(w.lv>=3?1:0)+(w.lv>=4?1:0)+(w.lv>=6?1:0);
+ const dmg=(34+(w.lv>=2?12:0)+(w.lv>=4?10:0)+(w.lv>=5?18:0)+(w.lv>=6?12:0))*atkMul();
+ const length=(150+(w.lv>=2?24:0)+(w.lv>=4?28:0)+(w.lv>=6?40:0))*areaMul();
+ const width=(26+(w.lv>=3?6:0)+(w.lv>=4?8:0)+(w.lv>=6?5:0))*areaMul();
  const baseAngle=Math.atan2(target.y-player.y,target.x-player.x);
  for(let i=0;i<lashes;i++)scheduleGameTask(i*90,()=>{
   if(state.gameOver||state.paused||state.leveling)return;
-  const angle=w.evolved?baseAngle+(i-(lashes-1)/2)*.56:baseAngle+(i-(lashes-1)/2)*.38;
+  const angle=baseAngle+(i-(lashes-1)/2)*(w.lv>=4?.52:.38);
   for(const e of [...state.enemies]){
    const ex=e.x-player.x,ey=e.y-player.y;
    const forward=ex*Math.cos(angle)+ey*Math.sin(angle);
    const side=Math.abs(-ex*Math.sin(angle)+ey*Math.cos(angle));
    if(forward>0&&forward<length&&side<width+e.r){damageEnemy(e,dmg);e.x+=Math.cos(angle)*16;e.y+=Math.sin(angle)*16}
   }
-  state.effects.push({type:'tentacle',x:player.x,y:player.y,angle,r:length,width,life:w.evolved?.42:.28,maxLife:w.evolved?.42:.28,color:w.evolved?'rgba(54,48,48,.96)':'rgba(13,12,12,.94)',liSui:w.evolved,text:i===0?w.name:''});
+  state.effects.push({type:'tentacle',x:player.x,y:player.y,angle,r:length,width,life:w.lv>=4?.42:.28,maxLife:w.lv>=4?.42:.28,color:w.lv>=6?'rgba(40,35,35,.96)':'rgba(13,12,12,.94)',liSui:w.lv>=6,text:i===0?w.name:''});
  });
  w.cd=(2.15*(w.lv>=4?.9:1)*(w.lv>=7?.86:1))*cdMul();
 }
@@ -809,16 +811,12 @@ function useEyeSacrifice(dt){
  w.cd=(w.evolved?18:11.5*(lv>=2?.92:1)*(lv>=5?.88:1))*cdMul();
 }
 
-function evolveOptions(){
- const w=player.weapons.suisui,tree=CONFIG.weaponTrees.suisui;
- if(w.lv>=tree.choiceAt&&w.form==='black')return [{type:'evolve',key:'suisui',title:'接纳：李岁',desc:'黑太岁获得名字与人形，成为独立伴生角色；多目标缠取后收束造成范围伤害。Lv7 将显化为玄牝。'}];
- return [];
-}
+function evolveOptions(){return[]}
 function weaponDesc(k,lv){
  const m={
   coin:['远程发射铜钱短剑','伤害提升','连射 +1','穿透 +1','伤害提升','攻速和穿透提升','进化：铜钱悬剑'],
   you:['召出2道游老爷弧线追踪','伤害范围提升','冷却降低','数量 2→3道','速度提升','冷却降低','数量 3→4道','伤害提升'],
-  suisui:['黑太岁触须近身扫击','触须距离提升','触须数量 +1','解锁进化选择：接纳李岁','伤害提升','李岁缠取目标 +1','进化：玄牝，扩大缠取与收束领域'],
+  suisui:['黑太岁触须近身扫击','触须距离提升','触须数量 +1','触手强化：数量伤害范围全面提升','伤害提升','缠取目标与距离增加','进化：玄牝，扩大缠取与收束领域'],
   fire:['周期披上献祭火衣并留火','火衣伤害提升','火衣范围提升','持续时间提升','火痕数量增加','冷却降低','进化：火袄蜒行'],
   blood:['甲钉×2：发射回旋甲片','甲钉×3：伤害与数量提升','血牙×4：成排牙齿贯穿怪群','血牙×5：数量与穿透提升','血牙速度射程提升','指骨×6：近中距斜向穿刺','三祭合流：3甲钉+4血牙+7指骨齐发'],
   general:['全方向短促凝视定身','冷却降低','扇形范围增加','反方向再扫一次','停顿时间增加','四向轮流扫射','进化：巴虺一瞥'],
@@ -887,9 +885,8 @@ function updateWeaponName(key){
   return;
  }
  if(key==='suisui'){
-  if(w.form!=='black'&&w.lv>=tree.finalAt)w.form='xuanpin';
-  w.evolved=w.form!=='black';
-  w.name=w.form==='xuanpin'?tree.finalName:w.form==='lisui'?tree.evolvedName:'黑太岁';
+  if(w.lv>=7){w.form='xuanpin';w.evolved=true;w.name='玄牝'}
+  else{w.form='black';w.evolved=false;w.name='黑太岁'}
   return;
  }
  if(w.lv>=tree.evolveAt){w.evolved=true;w.name=tree.evolvedName}
