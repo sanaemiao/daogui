@@ -774,7 +774,7 @@ function weaponDesc(k,lv){
   fire:['周期披上献祭火衣并留火','火衣伤害提升','火衣范围提升','持续时间提升','火痕数量增加','冷却降低','进化：火袄蜒行'],
   blood:['甲钉×2：发射回旋甲片','甲钉×3：伤害与数量提升','血牙×4：成排牙齿贯穿怪群','血牙×5：数量与穿透提升','血牙速度射程提升','指骨×6：近中距斜向穿刺','三祭合流：3甲钉+4血牙+7指骨齐发'],
   general:['全方向短促凝视定身','冷却降低','扇形范围增加','反方向再扫一次','停顿时间增加','四向轮流扫射','进化：巴虺一瞥'],
-  ultimate:['解锁置闰五行大招：Q键触发/60s冷却/8s蓄势/爆发']
+  ultimate:['解锁置闰五行：60s祭期/8s全伤+75%/锁1血','祭期缩短：60s→45s','祭期缩短：45s→30s'],
  };
  return m[k]?.[lv-1]||'强化效果';
 }
@@ -1093,7 +1093,8 @@ function update(dt){
    if(player.ultimateTimer<=0&&player.ultimateBoost<=0){
     const cost=player.hp*CONFIG.sacrifice.ultimateRatio;
     if(player.hp>CONFIG.sacrifice.minHp)COMBAT.takePlayerDamage(player,cost,DAMAGE.SACRIFICE,{minHp:CONFIG.sacrifice.minHp});
-    player.ultimateBoost=8;player.ultimateTimer=30;
+    const period=player.weapons.ultimate.lv>=3?30:(player.weapons.ultimate.lv>=2?45:60);
+    player.ultimateBoost=8;player.ultimateTimer=period;
     state.effects.push({type:'ring',x:player.x,y:player.y,r:44,life:.5,maxLife:.5,color:'rgba(100,15,15,.55)'});
     showMessage(player.hp<=1?'锁一血·全伤强化+75%':'献祭·全伤强化+75%');
    }
@@ -1546,7 +1547,7 @@ function updateUI(){
  const nextLine=next?`${formatClock(next.at)} ${next.label}`:'击败丹阳子';
  const sacrificePerMinute=player.hp*CONFIG.sacrifice.daqianluDrainPerSecond*60;
  const sacrificeLine=player.weapons.blood.lv>0?`<br>献祭 ${sacrificePerMinute.toFixed(1)}/分 · 本局 ${player.sacrifice.total.toFixed(2)}<br><span style="color:#ff6b60">每秒祭损 ${(player.hp*CONFIG.sacrifice.daqianluDrainPerSecond).toFixed(2)}</span>`:'';
- const ult=player;const ultLine=player.weapons.ultimate&&player.weapons.ultimate.lv>0?(player.ultimateBoost>0?`<br><span style="color:#ff6b30">全伤+75% ${player.ultimateBoost.toFixed(1)}s</span>`:`<br><span style="color:#888">下次献祭 ${player.ultimateTimer.toFixed(0)}s</span>`):'';
+ const ult=player;const ultLine=player.weapons.ultimate&&player.weapons.ultimate.lv>0?(player.ultimateBoost>0?`<br><span style="color:#ff6b30">全伤+75% ${player.ultimateBoost.toFixed(1)}s</span>`:`<br><span style="color:#888">祭期${player.weapons.ultimate.lv>=3?30:player.weapons.ultimate.lv>=2?45:60}s ${player.ultimateTimer.toFixed(0)}s</span>`):'';
  ui.innerHTML=`血 ${Math.ceil(player.hp)}/${player.maxHp}<br>回 ${(player.regenPercent*100).toFixed(2)}%/s${sacrificeLine}${ultLine}<br>Lv ${player.level}<br>散炁 ${Math.floor(player.exp)}/${player.needExp} · 先天一炁<br>${mm}:${ss}<br>杀 ${state.kill}<br>阶段 ${phase.label}<br>压力 ×${phase.spawnMult.toFixed(2)}<br>下一节点 ${nextLine}`;
  const ws=Object.values(player.weapons).filter(w=>w.lv>0).map(w=>`${w.evolved?'★':''}${w.name} Lv${w.lv}`);
  const ps=Object.values(player.passives).filter(p=>p.lv>0).map(p=>`${p.name} Lv${p.lv}`);
