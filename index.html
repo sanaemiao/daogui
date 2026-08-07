@@ -1280,7 +1280,7 @@ function draw(){
   ctx.fillStyle='#240000';ctx.font='bold 9px Microsoft YaHei';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(eb.text,p.x,p.y);
   ctx.restore();
  }
- for(const e of state.enemies){const spriteSize=drawEnemySprite(e);if(!spriteSize)drawTextEntity(e.text,e.x,e.y,e.color,e.elite?22:Math.max(12,e.size-7));const p=ws(e.x,e.y);if(e.role==='dasher'&&e.dashState==='warning'){ctx.save();ctx.globalAlpha=.5+.5*Math.sin(state.time*14);ctx.strokeStyle='#ff3333';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,(spriteSize||e.r)*.7,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#ff3333';ctx.font='bold 14px Microsoft YaHei';ctx.textAlign='center';ctx.fillText('!',p.x,p.y-(spriteSize||e.r)*.9);ctx.restore()}if(e.role==='orbiter'){ctx.save();ctx.globalAlpha=.25;ctx.strokeStyle='#8899cc';ctx.lineWidth=1;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(p.x,p.y,(spriteSize||e.r)*1.3,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.restore()}if(e.flashTimer>0){ctx.save();ctx.globalAlpha=e.flashTimer/.08*.55;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.x,p.y,(spriteSize||e.r)*.9,0,Math.PI*2);ctx.fill();ctx.restore()}if(e.elite||e.hp<e.maxHp){const w=e.elite?104:44,barY=p.y-(spriteSize?spriteSize*.58:e.r)-14;ctx.fillStyle='rgba(0,0,0,.62)';ctx.fillRect(p.x-w/2,barY,w,6);ctx.fillStyle=e.elite?'#bd7c51':'#d8c36a';ctx.fillRect(p.x-w/2,barY,w*clamp(e.hp/e.maxHp,0,1),6)}}
+ for(const e of state.enemies){const spriteSize=drawEnemySprite(e);if(!spriteSize)drawTextEntity(e.text,e.x,e.y,e.color,e.elite?22:Math.max(12,e.size-7));const p=ws(e.x,e.y);if(e.role==='dasher'&&e.dashState==='warning'){ctx.save();ctx.globalAlpha=.5+.5*Math.sin(state.time*14);ctx.strokeStyle='#ff3333';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,(spriteSize||e.r)*.7,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#ff3333';ctx.font='bold 14px Microsoft YaHei';ctx.textAlign='center';ctx.fillText('!',p.x,p.y-(spriteSize||e.r)*.9);ctx.restore()}if(e.role==='orbiter'){ctx.save();ctx.globalAlpha=.25;ctx.strokeStyle='#8899cc';ctx.lineWidth=1;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(p.x,p.y,(spriteSize||e.r)*1.3,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.restore()}if(e.elite||e.hp<e.maxHp){const w=e.elite?104:44,barY=p.y-(spriteSize?spriteSize*.58:e.r)-14;ctx.fillStyle='rgba(0,0,0,.62)';ctx.fillRect(p.x-w/2,barY,w,6);ctx.fillStyle=e.elite?'#bd7c51':'#d8c36a';ctx.fillRect(p.x-w/2,barY,w*clamp(e.hp/e.maxHp,0,1),6)}}
  const pp=ws(player.x,player.y);
  // 范围被动边界：阵势铺陈等级越高，边界圈越大
  const rangeLv=player.passives.area.lv;
@@ -1495,11 +1495,13 @@ function triggerDodge(){
  if(!state.started||state.paused||state.leveling||state.gameOver)return;
  if(player.dodgeCd>0)return;
  player.dodgeActive=.18;player.dodgeCd=3.5;player.invuln=.25;
- const dx=player.facing,dy=0;const dashDist=130;
+ const dx=player.facing,dy=0;const dashDist=80;
+ const startX=player.x,startY=player.y;
  const nx=player.x+dx*dashDist,ny=player.y+dy*dashDist;
  if(!positionBlocked(nx,player.y))player.x=nx;
  if(!positionBlocked(player.x,ny))player.y=ny;
- state.effects.push({type:'ring',x:player.x,y:player.y,r:38,life:.22,maxLife:.22,color:'rgba(210,195,160,.7)'});
+ state.effects.push({type:'ring',x:startX,y:startY,r:34,life:.18,maxLife:.18,color:'rgba(210,195,160,.5)'});
+ state.effects.push({type:'ring',x:player.x,y:player.y,r:36,life:.32,maxLife:.32,color:'rgba(210,195,160,.85)'});
  showMessage('闪避');
 }
 function togglePause(){if(!state.started||state.leveling||state.gameOver)return;state.paused=!state.paused;pauseBtn.textContent=state.paused?'继续':'暂停';showMessage(state.paused?'暂停':'继续')}
