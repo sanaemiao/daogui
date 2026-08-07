@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "character": "玄牝（高领黑洞六手形态）",
+  "status": "fan-demo generated asset; keep non-commercial until IP authorization",
+  "source": "xuanpin-v2-sheet.png",
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "columns": 4,
+  "rows": 2,
+  "fps": 8,
+  "animations": {
+    "idleWalk": [
+      0,
+      1
+    ],
+    "multiTentacleAssist": [
+      4,
+      5,
+      6,
+      7
+    ]
+  },
+  "sheet": "xuanpin-v2-spritesheet.png",
+  "preview": "xuanpin-v2-preview.gif"
+}

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "character": "李岁（认真助战人形）",
+  "status": "fan-demo generated asset; keep non-commercial until IP authorization",
+  "source": "lisui-girl-v2-sheet.png",
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "columns": 4,
+  "rows": 2,
+  "fps": 8,
+  "animations": {
+    "idleWalk": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "multiTentacleAssist": [
+      4,
+      5,
+      6,
+      7
+    ]
+  },
+  "sheet": "lisui-girl-v2-spritesheet.png",
+  "preview": "lisui-girl-v2-preview.gif"
+}
