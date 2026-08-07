@@ -502,6 +502,7 @@ function debugJumpToNextNode(){
  state.enemyBullets.length=0;
  state.effects.length=0;
  state.gems.length=0;
+ state.hitstop=0;state.shakeX=0;state.shakeY=0;
  player.exp=0;
  player.hp=Math.max(player.hp,player.maxHp*.72);
  if(target>=110)player.weapons.you.lv=Math.max(player.weapons.you.lv,2);
@@ -1076,6 +1077,8 @@ function updateEnemyBehavior(e,dt){
 }
 
 function update(dt){
+ if(!state.started||state.gameOver)return;
+ if(state.paused&&!state.leveling&&levelPanel.style.display!=='flex')state.paused=false;
  if(!state.started||state.paused||state.gameOver)return;
  if(state.hitstop>0){state.hitstop-=dt;if(state.hitstop>0)return}else state.hitstop=0;
  state.shakeX*=Math.pow(.005,dt);state.shakeY*=Math.pow(.005,dt);
