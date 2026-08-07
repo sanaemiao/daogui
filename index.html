@@ -719,7 +719,7 @@ function useSuisui(dt){
   w.cd=(finalForm?2.35:2.85)*cdMul();return;
  }
  const lashes=1+(w.lv>=3?1:0)+(w.lv>=6?1:0)+(w.evolved?2:0);
- const dmg=(34+(w.lv>=2?12:0)+(w.lv>=5?14:0)+(w.evolved?20:0))*atkMul();
+ const dmg=(34+(w.lv>=2?12:0)+(w.lv>=5?18:0)+(w.evolved?24:0))*atkMul();
  const length=(150+(w.lv>=2?24:0)+(w.lv>=4?28:0)+(w.evolved?48:0))*areaMul();
  const width=(26+(w.lv>=3?6:0)+(w.lv>=6?5:0))*areaMul();
  const baseAngle=Math.atan2(target.y-player.y,target.x-player.x);
@@ -757,15 +757,15 @@ function useBlood(dt){
  const baseAngle=Math.atan2(target.y-player.y,target.x-player.x);
  const make=(type,angle,speed,dmg,r,life,pierce,extra={})=>state.bullets.push({type,x:player.x,y:player.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,dmg:dmg*atkMul(),r,life,pierce,hit:new Set(),age:0,color:'#bd3140',...extra});
  if(lv<3){
-  const count=1+(lv>=2?1:0);for(let i=0;i<count;i++)make('daqianNail',baseAngle+(i-(count-1)/2)*.16,300,42+(lv>=2?10:0),8,2.2,lv>=2?2:1,{returnAfter:.72});
+  const count=1+(lv>=2?1:0);for(let i=0;i<count;i++)make('daqianNail',baseAngle+(i-(count-1)/2)*.16,310,48+(lv>=2?14:0),8,2.2,lv>=2?2:1,{returnAfter:.72});
  }else if(lv<6){
-  const count=2+(lv>=4?1:0)+(lv>=5?1:0);for(let i=0;i<count;i++)make('daqianTooth',baseAngle+(i-(count-1)/2)*.09,400+(lv>=5?40:0),38+(lv>=4?10:0),5,2.5,2+(lv>=4?1:0));
+  const count=2+(lv>=4?1:0)+(lv>=5?1:0);for(let i=0;i<count;i++)make('daqianTooth',baseAngle+(i-(count-1)/2)*.09,420+(lv>=5?40:0),44+(lv>=4?12:0),5,2.5,2+(lv>=4?1:0));
  }else if(lv<7){
-  const count=5,spread=.82;for(let i=0;i<count;i++)make('daqianFinger',baseAngle-spread/2+spread*i/(count-1),310,38,6,.72,0,{knockback:20});
+  const count=5,spread=.82;for(let i=0;i<count;i++)make('daqianFinger',baseAngle-spread/2+spread*i/(count-1),320,45,6,.72,0,{knockback:24});
  }else{
-  for(let i=0;i<2;i++)make('daqianNail',baseAngle+(i-.5)*.16,310,44,8,2.5,2,{returnAfter:.72});
-  for(let i=0;i<3;i++)make('daqianTooth',baseAngle+(i-1)*.1,440,42,5,2.8,3);
-  const count=6,spread=.9;for(let i=0;i<count;i++)make('daqianFinger',baseAngle-spread/2+spread*i/(count-1),320,35,6,.72,0,{knockback:24,spawnSpikes:true});
+  for(let i=0;i<2;i++)make('daqianNail',baseAngle+(i-.5)*.16,320,52,8,2.5,2,{returnAfter:.72});
+  for(let i=0;i<3;i++)make('daqianTooth',baseAngle+(i-1)*.1,460,50,5,2.8,3);
+  const count=6,spread=.9;for(let i=0;i<count;i++)make('daqianFinger',baseAngle-spread/2+spread*i/(count-1),340,42,6,.72,0,{knockback:28,spawnSpikes:true});
  }
  state.effects.push({type:'daqian',x:player.x,y:player.y,r:72,targets:[{x:target.x,y:target.y}],sacrifice:player.sacrifice.last,life:.62,maxLife:.62,color:'rgba(156,14,24,.86)'});
  w.cd=(lv<3?3.9:(lv<6?3.2:3.6))*(lv>=5?.9:1)*cdMul();
