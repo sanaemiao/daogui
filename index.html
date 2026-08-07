@@ -1237,10 +1237,12 @@ function drawEnemySprite(e){
   const img=BOSS_SPRITES.fakeHuowang.image,p=ws(e.x,e.y),z=viewZoom(),sz=96*z;
   if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.85;ctx.translate(p.x,p.y);const frame=Math.floor(state.time*6)%4;ctx.drawImage(img,frame*128,0,128,128,-sz/2,-sz*.7,sz,sz);ctx.restore();return sz}
  }else{
-  const img=BOSS_SPRITES.xishen.image,p=ws(e.x,e.y),z=viewZoom(),sz=100*z;
-  if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.75;ctx.translate(p.x,p.y);const mask=ctx.createRadialGradient(0,0,sz*.05,0,0,sz*.55);mask.addColorStop(0,'rgba(0,0,0,0)');mask.addColorStop(.6,'rgba(8,4,12,.3)');mask.addColorStop(1,'rgba(15,8,20,.8)');ctx.fillStyle=mask;ctx.beginPath();ctx.arc(0,0,sz*.55,0,Math.PI*2);ctx.fill();ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.restore();return sz}
-  // 图片加载失败：程序绘制漂浮女鬼
-  ctx.save();ctx.globalAlpha=.65;ctx.translate(p.x,p.y);const bob=Math.sin(state.time*2+e.x*.01)*4*z;ctx.fillStyle='rgba(180,170,200,.4)';ctx.strokeStyle='rgba(160,150,190,.5)';ctx.lineWidth=2*z;ctx.beginPath();ctx.ellipse(0,bob,sz*.25,sz*.4,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle='rgba(200,190,220,.3)';ctx.lineWidth=1*z;for(let i=0;i<5;i++){const a=-Math.PI/2+(i-2)*.25;ctx.beginPath();ctx.moveTo(Math.cos(a)*sz*.1,bob-sz*.35);ctx.quadraticCurveTo(Math.cos(a)*sz*.2,bob-sz*.55,0,bob-sz*.7);ctx.stroke()}ctx.restore();return sz
+  // 一阶段：程序绘制漂浮女鬼（不使用腊月十八原图避免白底）
+  const p=ws(e.x,e.y),z=viewZoom(),sz=100*z;ctx.save();ctx.globalAlpha=.65;ctx.translate(p.x,p.y);const bob=Math.sin(state.time*2+e.x*.01)*4*z;
+  ctx.fillStyle='rgba(170,160,195,.35)';ctx.strokeStyle='rgba(150,140,185,.45)';ctx.lineWidth=2*z;ctx.beginPath();ctx.ellipse(0,bob,sz*.22,sz*.38,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.strokeStyle='rgba(190,180,210,.25)';ctx.lineWidth=1*z;
+  for(let i=0;i<5;i++){const a=-Math.PI/2+(i-2)*.22;ctx.beginPath();ctx.moveTo(Math.cos(a)*sz*.08,bob-sz*.32);ctx.quadraticCurveTo(Math.cos(a)*sz*.18,bob-sz*.52,0,bob-sz*.65);ctx.stroke()}
+  ctx.fillStyle='rgba(200,190,220,.2)';ctx.beginPath();ctx.ellipse(0,bob+sz*.3,sz*.15,sz*.06,0,0,Math.PI*2);ctx.fill();ctx.restore();return sz
  }
 }
  const def=ENEMY_SPRITES[e.id];
