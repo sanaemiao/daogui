@@ -127,6 +127,7 @@ for(const def of Object.values(ENEMY_SPRITES)){def.image=new Image();def.image.s
 const BOSS_SPRITES={
  danyangzi:{src:'assets/legacy-reference-v1/丹阳子三花聚顶.png',image:new Image()},
  xishen:{src:'assets/legacy-reference-v1/腊月十八.png',image:new Image()},
+ fakeHuowang:{src:'assets/player-lihuowang-v8/lihuowang-v8-sheet.png',image:new Image()},
 };
 for(const def of Object.values(BOSS_SPRITES))def.image.src=def.src;
 const PLAYER_SPRITE={
@@ -757,15 +758,19 @@ function useBlood(dt){
  const baseAngle=Math.atan2(target.y-player.y,target.x-player.x);
  const make=(type,angle,speed,dmg,r,life,pierce,extra={})=>state.bullets.push({type,x:player.x,y:player.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,dmg:dmg*atkMul(),r,life,pierce,hit:new Set(),age:0,color:'#bd3140',...extra});
  if(lv<3){
-  const count=1+(lv>=2?1:0);for(let i=0;i<count;i++)make('daqianNail',baseAngle+(i-(count-1)/2)*.16,310,48+(lv>=2?14:0),8,2.2,lv>=2?2:1,{returnAfter:.72});
+  const count=2;for(let i=0;i<count;i++)make('daqianNail',baseAngle+(i-(count-1)/2)*.16,310,48,8,2.3,2,{returnAfter:.72});
+ }else if(lv===2){
+  const count=3;for(let i=0;i<count;i++)make('daqianNail',baseAngle+(i-(count-1)/2)*.14,320,54,8,2.3,2,{returnAfter:.72});
  }else if(lv<6){
-  const count=2+(lv>=4?1:0)+(lv>=5?1:0);for(let i=0;i<count;i++)make('daqianTooth',baseAngle+(i-(count-1)/2)*.09,420+(lv>=5?40:0),44+(lv>=4?12:0),5,2.5,2+(lv>=4?1:0));
+  const count=4+(lv>=5?1:0);for(let i=0;i<count;i++)make('daqianTooth',baseAngle+(i-(count-1)/2)*.09,420+(lv>=5?40:0),44+(lv>=4?12:0),5,2.5,2+(lv>=4?1:0));
+ }else if(lv===4){
+  const count=5;for(let i=0;i<count;i++)make('daqianTooth',baseAngle+(i-(count-1)/2)*.08,430,50,5,2.5,3);
  }else if(lv<7){
-  const count=5,spread=.82;for(let i=0;i<count;i++)make('daqianFinger',baseAngle-spread/2+spread*i/(count-1),320,45,6,.72,0,{knockback:24});
+  const count=6,spread=.82;for(let i=0;i<count;i++)make('daqianFinger',baseAngle-spread/2+spread*i/(count-1),320,45,6,.72,0,{knockback:24});
  }else{
-  for(let i=0;i<2;i++)make('daqianNail',baseAngle+(i-.5)*.16,320,52,8,2.5,2,{returnAfter:.72});
-  for(let i=0;i<3;i++)make('daqianTooth',baseAngle+(i-1)*.1,460,50,5,2.8,3);
-  const count=6,spread=.9;for(let i=0;i<count;i++)make('daqianFinger',baseAngle-spread/2+spread*i/(count-1),340,42,6,.72,0,{knockback:28,spawnSpikes:true});
+  for(let i=0;i<3;i++)make('daqianNail',baseAngle+(i-1)*.16,320,52,8,2.5,2,{returnAfter:.72});
+  for(let i=0;i<4;i++)make('daqianTooth',baseAngle+(i-1.5)*.1,460,50,5,2.8,3);
+  const count=7,spread=.9;for(let i=0;i<count;i++)make('daqianFinger',baseAngle-spread/2+spread*i/(count-1),340,42,6,.72,0,{knockback:28,spawnSpikes:true});
  }
  state.effects.push({type:'daqian',x:player.x,y:player.y,r:72,targets:[{x:target.x,y:target.y}],sacrifice:player.sacrifice.last,life:.62,maxLife:.62,color:'rgba(156,14,24,.86)'});
  w.cd=(lv<3?3.9:(lv<6?3.2:3.6))*(lv>=5?.9:1)*cdMul();
@@ -815,7 +820,7 @@ function weaponDesc(k,lv){
   you:['召出2道游老爷弧线追踪','伤害范围提升','冷却降低','数量 2→3道','速度提升','冷却降低','数量 3→4道','伤害提升'],
   suisui:['黑太岁触须近身扫击','触须距离提升','触须数量 +1','解锁进化选择：接纳李岁','伤害提升','李岁缠取目标 +1','进化：玄牝，扩大缠取与收束领域'],
   fire:['周期披上献祭火衣并留火','火衣伤害提升','火衣范围提升','持续时间提升','火痕数量增加','冷却降低','进化：火袄蜒行'],
-  blood:['甲钉：发射回旋甲片','甲钉伤害穿透提升','血牙：成排牙齿贯穿怪群','血牙数量与穿透提升','血牙速度射程提升','指骨：近中距斜向穿刺','三祭合流：三种形态交替齐发'],
+  blood:['甲钉×2：发射回旋甲片','甲钉×3：伤害与数量提升','血牙×4：成排牙齿贯穿怪群','血牙×5：数量与穿透提升','血牙速度射程提升','指骨×6：近中距斜向穿刺','三祭合流：3甲钉+4血牙+7指骨齐发'],
   general:['全方向短促凝视定身','冷却降低','扇形范围增加','反方向再扫一次','停顿时间增加','四向轮流扫射','进化：巴虺一瞥'],
   ultimate:['解锁置闰五行大招：Q键触发/60s冷却/8s蓄势/爆发']
  };
@@ -1006,6 +1011,13 @@ function updateBlackTaisuiElite(e,dt){
 function updateXishenElite(e,dt){
  const def=CONFIG.eliteXishen,sm=e.slow>0?.5:1;
  e.shadowCd-=dt;e.laneCd-=dt;e.faceFlip+=dt;
+ // 二阶段切换
+ if(!e.phase2&&e.hp/e.maxHp<=.5){
+  e.phase2=true;e.hp=Math.max(e.hp,e.maxHp*.49);e.dmg=def.damage+4;e.speed=def.speed+8;
+  state.effects.push({type:'ring',x:e.x,y:e.y,r:120,life:.7,maxLife:.7,color:'rgba(180,40,40,.7)',text:'伪·李火旺'});
+  showMessage('腊月十八撕下面皮，露出了你的脸。');
+  state.shakeX=rand(-3,3);state.shakeY=rand(-3,3);state.hitstop=.05;
+ }
  const angle=Math.atan2(player.y-e.y,player.x-e.x),dist=Math.hypot(player.x-e.x,player.y-e.y);
  if(dist>116){e.x+=Math.cos(angle)*e.speed*sm*dt;e.y+=Math.sin(angle)*e.speed*sm*dt}
  if(e.shadowCd<=0){
@@ -1015,6 +1027,11 @@ function updateXishenElite(e,dt){
  if(e.laneCd<=0){
   state.effects.push({type:'xishenLane',x:e.x,y:e.y,angle,length:820,width:64,damage:def.laneDamage,elapsed:0,windup:.72,triggered:false,life:1.08,maxLife:1.08});
   e.laneCd=def.laneCooldown;
+ }
+ // 二阶段仿玩家攻击
+ if(e.phase2){
+  e.fakeCoinCd=(e.fakeCoinCd||2)-dt;
+  if(e.fakeCoinCd<=0){e.fakeCoinCd=1.8;const a=Math.atan2(player.y-e.y,player.x-e.x);state.enemyBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*280,vy:Math.sin(a)*280,dmg:16,r:5,life:2.5,color:'#ffd878',text:''})}
  }
 }
 
@@ -1245,8 +1262,20 @@ function drawLiSuiCompanion(){
 function drawEnemySprite(e){
  if(e.id==='eliteBlackTaisui'||e.id==='eliteRenxiao')return drawBlackTaisuiElite(e);
  // Boss 占位图像绘制
- if(e.id==='bossDanyangzi'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=(e.phase===2?140:110)*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.82;ctx.translate(p.x,p.y);const grad=ctx.createRadialGradient(0,0,sz*.1,0,0,sz*.55);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(.7,'rgba(10,8,6,.5)');grad.addColorStop(1,'rgba(15,12,8,.85)');ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,sz*.55,0,Math.PI*2);ctx.fill();ctx.drawImage(img,-sz/2,-sz/2,sz,sz);if(e.phase===2){ctx.strokeStyle='rgba(180,90,50,.55)';ctx.lineWidth=4*z;ctx.beginPath();ctx.arc(0,0,sz*.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#b85a30';ctx.font=`bold ${Math.max(10,16*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.6)}ctx.restore();return sz}}
- if(e.id==='bossSanhua'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=160*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.88;ctx.translate(p.x,p.y);const grad=ctx.createRadialGradient(0,0,sz*.1,0,0,sz*.55);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(.7,'rgba(10,8,6,.5)');grad.addColorStop(1,'rgba(15,12,8,.85)');ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,sz*.55,0,Math.PI*2);ctx.fill();ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.strokeStyle='rgba(200,100,50,.7)';ctx.lineWidth=5*z;ctx.beginPath();ctx.arc(0,0,sz*.52,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#d06030';ctx.font=`bold ${Math.max(12,20*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.55);ctx.restore();return sz}}else if(e.id==='eliteXishen'){const img=BOSS_SPRITES.xishen.image;const p=ws(e.x,e.y),z=viewZoom(),sz=96*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.75;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.restore();return sz}}
+ if(e.id==='bossDanyangzi'){
+  const p=ws(e.x,e.y),z=viewZoom(),sz=(e.phase===2?140:110)*z;
+  if(e.phase===2){const img=BOSS_SPRITES.danyangzi.image;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.82;ctx.translate(p.x,p.y);const grad=ctx.createRadialGradient(0,0,sz*.1,0,0,sz*.55);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(.7,'rgba(10,8,6,.5)');grad.addColorStop(1,'rgba(15,12,8,.85)');ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,sz*.55,0,Math.PI*2);ctx.fill();ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.strokeStyle='rgba(180,90,50,.55)';ctx.lineWidth=4*z;ctx.beginPath();ctx.arc(0,0,sz*.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#b85a30';ctx.font=`bold ${Math.max(10,16*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.6);ctx.restore();return sz}}else{// 一阶段程序绘制
+   ctx.save();ctx.globalAlpha=.85;ctx.translate(p.x,p.y);const grad=ctx.createRadialGradient(0,-sz*.15,sz*.05,0,0,sz*.5);grad.addColorStop(0,'#5a4035');grad.addColorStop(.5,'#2a1f1a');grad.addColorStop(1,'rgba(15,10,8,.9)');ctx.fillStyle=grad;ctx.strokeStyle='#7a4a35';ctx.lineWidth=3*z;ctx.beginPath();ctx.ellipse(0,0,sz*.35,sz*.5,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#c87840';ctx.font=`bold ${Math.max(10,14*z)}px serif`;ctx.textAlign='center';ctx.fillText('丹阳子',0,-sz*.6);ctx.fillStyle='#a05020';ctx.font=`bold ${Math.max(8,10*z)}px serif`;ctx.fillText('(图待补)',0,sz*.65);ctx.restore();return sz}
+ }
+ if(e.id==='bossSanhua'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=160*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.88;ctx.translate(p.x,p.y);const grad=ctx.createRadialGradient(0,0,sz*.1,0,0,sz*.55);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(.7,'rgba(10,8,6,.5)');grad.addColorStop(1,'rgba(15,12,8,.85)');ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,sz*.55,0,Math.PI*2);ctx.fill();ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.strokeStyle='rgba(200,100,50,.7)';ctx.lineWidth=5*z;ctx.beginPath();ctx.arc(0,0,sz*.52,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#d06030';ctx.font=`bold ${Math.max(12,20*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.55);ctx.restore();return sz}}else if(e.id==='eliteXishen'){
+ if(e.phase2){
+  const img=BOSS_SPRITES.fakeHuowang.image,p=ws(e.x,e.y),z=viewZoom(),sz=96*z;
+  if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.85;ctx.translate(p.x,p.y);const frame=Math.floor(state.time*6)%4;ctx.drawImage(img,frame*128,0,128,128,-sz/2,-sz*.7,sz,sz);ctx.restore();return sz}
+ }else{
+  const img=BOSS_SPRITES.xishen.image,p=ws(e.x,e.y),z=viewZoom(),sz=100*z;
+  if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.75;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.restore();return sz}
+ }
+}
  const def=ENEMY_SPRITES[e.id];
  if(!def||!def.image.complete||!def.image.naturalWidth)return 0;
  const p=ws(e.x,e.y),z=viewZoom();
