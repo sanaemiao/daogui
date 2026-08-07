@@ -31,7 +31,7 @@
     map: {
       texture: "assets/pixel-prototypes/village-ground-v1-512.png",
       tileSize: 512,
-      bounds: { minX: -900, maxX: 900, minY: -650, maxY: 650 },
+      bounds: { minX: -1800, maxX: 1800, minY: -1300, maxY: 1300 },
       obstacles: [
         { id: "well-west", type: "circle", x: -270, y: -190, r: 58, label: "枯井" },
         { id: "altar-east", type: "circle", x: 430, y: 235, r: 66, label: "石坛" },
@@ -39,6 +39,12 @@
         { id: "wall-north", type: "rect", x: 95, y: -340, w: 310, h: 48, label: "断墙" },
         { id: "wall-west", type: "rect", x: -520, y: -30, w: 250, h: 46, label: "断墙" },
         { id: "fence-east", type: "rect", x: 250, y: 65, w: 48, h: 245, label: "朽栅" },
+        { id: "house-se", type: "rect", x: 900, y: 500, w: 180, h: 120, label: "破屋" },
+        { id: "shrine-nw", type: "circle", x: -1200, y: -800, r: 72, label: "废祠" },
+        { id: "wall-ne", type: "rect", x: 650, y: -900, w: 260, h: 44, label: "残壁" },
+        { id: "grave-sw", type: "circle", x: -1500, y: 700, r: 52, label: "孤坟" },
+        { id: "fence-sw", type: "rect", x: -800, y: -750, w: 44, h: 200, label: "烂栅" },
+        { id: "cave-se", type: "circle", x: 1300, y: -500, r: 65, label: "窑洞" },
       ],
     },
     activeWeaponKeys: ["coin", "you", "suisui", "fire", "blood", "general"],
