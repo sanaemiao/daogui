@@ -204,7 +204,7 @@
       {
         from: 480,
         to: 600,
-        label: "喜神压境",
+        label: "腊月十八压境",
         pool: ["yaoren", "xiesui", "xiesui", "wumian", "wumian"],
         spawnMult: 2.45,
         batch: 3,
@@ -227,8 +227,8 @@
       { at: 240, type: "soulCrossing", rows: 4, perRow: 7, label: "游魂过境" },
       { at: 350, type: "message", text: "地底有什么东西正在翻身。", label: "精英预警" },
       { at: 360, type: "elite", kind: "blackTaisui", label: "黑太岁邪祟" },
-      { at: 470, type: "message", text: "远处有两个女人同时回过了头。", label: "喜神预警" },
-      { at: 480, type: "elite", kind: "xishen", label: "喜神" },
+      { at: 470, type: "message", text: "远处传来了低沉的笑声。", label: "腊月十八预警" },
+      { at: 480, type: "elite", kind: "xishen", label: "腊月十八" },
       { at: 590, type: "message", text: "炼丹炉里传来了三种笑声。", label: "丹阳子预警" },
       { at: 600, type: "boss", kind: "danyangzi", label: "丹阳子" },
     ],
@@ -253,7 +253,7 @@
     },
     eliteXishen: {
       id: "eliteXishen",
-      text: "喜神",
+      text: "腊月十八",
       hp: 7600,
       damage: 24,
       speed: 48,
