@@ -281,7 +281,7 @@ function applyPassive(k){
  if(k==='speed')player.speed=230*[1,1.08,1.16,1.24,1.32,1.45][p.lv];
 }
 function showMessage(t){msg.textContent=t;msg.style.opacity=1;clearTimeout(showMessage.t);showMessage.t=setTimeout(()=>msg.style.opacity=0,1500)}
-function viewZoom(){return Math.max(.78,1-player.passives.area.lv*.045)}
+function viewZoom(){const screenFactor=Math.min(1,Math.max(.5,innerWidth/800));return Math.max(.45,screenFactor-player.passives.area.lv*.04)}
 function ws(x,y){const z=viewZoom();return{x:(x-state.camera.x)*z+innerWidth/2,y:(y-state.camera.y)*z+innerHeight/2}}
 
 function positionBlocked(x,y,r=player.r){
