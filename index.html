@@ -656,7 +656,7 @@ function useYouLaoYe(dt){
  const w=player.weapons.you;if(w.lv<=0)return;w.cd-=dt;
  if(w.cd<=0){
   state.effects.push({type:'bellWave',x:player.x,y:player.y,r:48,life:.38,maxLife:.38,color:'rgba(196,151,70,.65)'});
-  const lv=w.lv,count=2+(lv>=4?1:0)+(lv>=7?1:0)+(w.evolved?1:0);
+  const lv=w.lv,count=2+(lv>=3?1:0)+(lv>=6?1:0)+(w.evolved?1:0);
   for(let i=0;i<count;i++){
    const a=Math.random()*Math.PI*2;
    state.youLaoYe.push({x:player.x+Math.cos(a)*28,y:player.y+Math.sin(a)*28,angle:a,life:w.evolved?6:4,hitCd:0,phase:Math.random()*6.28});
@@ -767,13 +767,21 @@ function updateSacrificeLedger(dt){
 
 function useEyeSacrifice(dt){
  const w=player.weapons.general;if(w.lv<=0)return;w.cd-=dt;if(w.cd>0)return;
- const target=densestTarget(850);if(!target)return;
+ const target=densestTarget(850);if(!target&&w.lv>1)return;
  applySacrificeBurst(CONFIG.sacrifice.eyeBurstRatio,'祭眼');
- const lv=w.lv,base=Math.atan2(target.y-player.y,target.x-player.x),directions=lv>=6?4:(lv>=4?2:1),radius=(245+(lv>=3?55:0)+(w.evolved?100:0))*areaMul(),half=.58+(lv>=3?.16:0),damage=(10+(lv>=5?8:0)+(w.evolved?8:0))*atkMul();
- for(let i=0;i<directions;i++){
-  const angle=directions===1?base:base+i*Math.PI*2/directions;
-  state.effects.push({type:'eyeGaze',x:player.x,y:player.y,angle,r:radius,halfAngle:half,life:.7,maxLife:.7,evolved:w.evolved});
-  for(const e of state.enemies){const dx=e.x-player.x,dy=e.y-player.y,dist=Math.hypot(dx,dy),a=Math.atan2(dy,dx),diff=Math.abs(Math.atan2(Math.sin(a-angle),Math.cos(a-angle)));if(dist<=radius+e.r&&diff<=half){damageEnemy(e,damage);e.slow=Math.max(e.slow,e.boss?.75:e.elite?1.1:1.45)}}
+ const lv=w.lv,radius=(245+(lv>=3?55:0)+(w.evolved?100:0))*areaMul(),damage=(10+(lv>=5?8:0)+(w.evolved?8:0))*atkMul();
+ if(lv===1){
+  // Lv1：全方向短促凝视定身
+  state.effects.push({type:'eyeGaze',x:player.x,y:player.y,angle:0,r:radius,halfAngle:Math.PI,life:.4,maxLife:.4,evolved:false});
+  for(const e of state.enemies){if(Math.hypot(player.x-e.x,player.y-e.y)<radius+e.r){damageEnemy(e,damage*.6);e.slow=Math.max(e.slow,e.boss?.5:e.elite?.8:1.2)}}
+  sfx.lowHp();
+ }else{
+  const base=Math.atan2(target.y-player.y,target.x-player.x),directions=lv>=6?4:(lv>=4?2:1),half=.58+(lv>=3?.16:0);
+  for(let i=0;i<directions;i++){
+   const angle=directions===1?base:base+i*Math.PI*2/directions;
+   state.effects.push({type:'eyeGaze',x:player.x,y:player.y,angle,r:radius,halfAngle:half,life:.7,maxLife:.7,evolved:w.evolved});
+   for(const e of state.enemies){const dx=e.x-player.x,dy=e.y-player.y,dist=Math.hypot(dx,dy),a=Math.atan2(dy,dx),diff=Math.abs(Math.atan2(Math.sin(a-angle),Math.cos(a-angle)));if(dist<=radius+e.r&&diff<=half){damageEnemy(e,damage);e.slow=Math.max(e.slow,e.boss?.75:e.elite?1.1:1.45)}}
+  }
  }
  if(w.evolved)state.effects.push({type:'bahuiEye',x:player.x,y:player.y,r:Math.max(innerWidth,innerHeight),life:1.25,maxLife:1.25});
  w.cd=(w.evolved?18:11.5*(lv>=2?.92:1)*(lv>=5?.88:1))*cdMul();
@@ -787,11 +795,11 @@ function evolveOptions(){
 function weaponDesc(k,lv){
  const m={
   coin:['远程发射铜钱短剑','伤害提升','连射 +1','穿透 +1','伤害提升','攻速和穿透提升','进化：铜钱悬剑'],
-  you:['召出2道游老爷弧线追踪','伤害范围提升','冷却降低','数量 +1','速度提升','冷却降低','数量 +1','伤害提升'],
+  you:['召出2道游老爷弧线追踪','伤害范围提升','冷却降低','数量 2→3道','速度提升','冷却降低','数量 3→4道','伤害提升'],
   suisui:['黑太岁触须近身扫击','触须距离提升','触须数量 +1','解锁进化选择：接纳李岁','伤害提升','李岁缠取目标 +1','进化：玄牝，扩大缠取与收束领域'],
   fire:['周期披上献祭火衣并留火','火衣伤害提升','火衣范围提升','持续时间提升','火痕数量增加','冷却降低','进化：火袄蜒行'],
   blood:['甲钉：发射回旋甲片','甲钉伤害穿透提升','血牙：成排牙齿贯穿怪群','血牙数量与穿透提升','血牙速度射程提升','指骨：近中距斜向穿刺','三祭合流：三种形态交替齐发'],
-  general:['扇形邪光定身敌人','冷却降低','扇形范围增加','反方向再扫一次','停顿时间增加','四向轮流扫射','进化：巴虺一瞥']
+  general:['全方向短促凝视定身','冷却降低','扇形范围增加','反方向再扫一次','停顿时间增加','四向轮流扫射','进化：巴虺一瞥']
  };
  return m[k]?.[lv-1]||'强化效果';
 }
