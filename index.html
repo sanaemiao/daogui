@@ -816,7 +816,8 @@ function weaponDesc(k,lv){
   suisui:['黑太岁触须近身扫击','触须距离提升','触须数量 +1','解锁进化选择：接纳李岁','伤害提升','李岁缠取目标 +1','进化：玄牝，扩大缠取与收束领域'],
   fire:['周期披上献祭火衣并留火','火衣伤害提升','火衣范围提升','持续时间提升','火痕数量增加','冷却降低','进化：火袄蜒行'],
   blood:['甲钉：发射回旋甲片','甲钉伤害穿透提升','血牙：成排牙齿贯穿怪群','血牙数量与穿透提升','血牙速度射程提升','指骨：近中距斜向穿刺','三祭合流：三种形态交替齐发'],
-  general:['全方向短促凝视定身','冷却降低','扇形范围增加','反方向再扫一次','停顿时间增加','四向轮流扫射','进化：巴虺一瞥']
+  general:['全方向短促凝视定身','冷却降低','扇形范围增加','反方向再扫一次','停顿时间增加','四向轮流扫射','进化：巴虺一瞥'],
+  ultimate:['解锁置闰五行大招：Q键触发/60s冷却/8s蓄势/爆发']
  };
  return m[k]?.[lv-1]||'强化效果';
 }
@@ -837,6 +838,7 @@ function randomNormalOptions(){
  if(player.level<=5 && player.weapons.blood.lv===0){
   opts.push({type:'weapon',key:'blood',title:'获得：大千录',desc:weaponDesc('blood',1)});
  }
+ if(player.level>=8&&player.weapons.ultimate.lv===0){opts.push({type:'weapon',key:'ultimate',title:'获得：置闰五行',desc:weaponDesc('ultimate',1)})}
 
  for(const k of wk){
   const w=player.weapons[k];
@@ -1119,8 +1121,6 @@ function update(dt){
  if(!state.leveling&&!state.paused){
   if(player.ultimate.charging){player.ultimate.chargeTimer+=dt;if(player.ultimate.chargeTimer>=8)triggerUltimateBurst()}
   else player.ultimate.cd=Math.max(0,player.ultimate.cd-dt);
-  // 置闰五行蓄势五色法阵
-  if(player.ultimate.charging&&state.time%0.15<dt){const prog=player.ultimate.chargeTimer/8,colors=['#e8d58a','#d4a55a','#c87840','#a0c8c0','#8098a0'];state.effects.push({type:'ring',x:player.x+Math.cos(prog*Math.PI*6)*Math.sin(prog*8)*18,y:player.y+Math.sin(prog*Math.PI*6)*Math.sin(prog*8)*18,r:60+prog*240,life:.35,maxLife:.35,color:colors[Math.floor(prog*5)%5]})}
  }
  let dx=0,dy=0;
  if(keys.has('w')||keys.has('arrowup'))dy-=1;if(keys.has('s')||keys.has('arrowdown'))dy+=1;if(keys.has('a')||keys.has('arrowleft'))dx-=1;if(keys.has('d')||keys.has('arrowright'))dx+=1;
@@ -1245,8 +1245,8 @@ function drawLiSuiCompanion(){
 function drawEnemySprite(e){
  if(e.id==='eliteBlackTaisui'||e.id==='eliteRenxiao')return drawBlackTaisuiElite(e);
  // Boss 占位图像绘制
- if(e.id==='bossDanyangzi'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=(e.phase===2?140:110)*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=e.phase===2?.92:.78;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);if(e.phase===2){ctx.strokeStyle='rgba(180,90,50,.55)';ctx.lineWidth=4*z;ctx.beginPath();ctx.arc(0,0,sz*.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#b85a30';ctx.font=`bold ${Math.max(10,16*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.6)}ctx.restore();return sz}}
- if(e.id==='bossSanhua'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=160*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.92;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.strokeStyle='rgba(200,100,50,.7)';ctx.lineWidth=5*z;ctx.beginPath();ctx.arc(0,0,sz*.52,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#d06030';ctx.font=`bold ${Math.max(12,20*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.55);ctx.restore();return sz}}else if(e.id==='eliteXishen'){const img=BOSS_SPRITES.xishen.image;const p=ws(e.x,e.y),z=viewZoom(),sz=96*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.75;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.restore();return sz}}
+ if(e.id==='bossDanyangzi'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=(e.phase===2?140:110)*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.82;ctx.translate(p.x,p.y);const grad=ctx.createRadialGradient(0,0,sz*.1,0,0,sz*.55);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(.7,'rgba(10,8,6,.5)');grad.addColorStop(1,'rgba(15,12,8,.85)');ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,sz*.55,0,Math.PI*2);ctx.fill();ctx.drawImage(img,-sz/2,-sz/2,sz,sz);if(e.phase===2){ctx.strokeStyle='rgba(180,90,50,.55)';ctx.lineWidth=4*z;ctx.beginPath();ctx.arc(0,0,sz*.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#b85a30';ctx.font=`bold ${Math.max(10,16*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.6)}ctx.restore();return sz}}
+ if(e.id==='bossSanhua'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=160*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.88;ctx.translate(p.x,p.y);const grad=ctx.createRadialGradient(0,0,sz*.1,0,0,sz*.55);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(.7,'rgba(10,8,6,.5)');grad.addColorStop(1,'rgba(15,12,8,.85)');ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,sz*.55,0,Math.PI*2);ctx.fill();ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.strokeStyle='rgba(200,100,50,.7)';ctx.lineWidth=5*z;ctx.beginPath();ctx.arc(0,0,sz*.52,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#d06030';ctx.font=`bold ${Math.max(12,20*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.55);ctx.restore();return sz}}else if(e.id==='eliteXishen'){const img=BOSS_SPRITES.xishen.image;const p=ws(e.x,e.y),z=viewZoom(),sz=96*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.75;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.restore();return sz}}
  const def=ENEMY_SPRITES[e.id];
  if(!def||!def.image.complete||!def.image.naturalWidth)return 0;
  const p=ws(e.x,e.y),z=viewZoom();
@@ -1409,7 +1409,11 @@ function drawGrid(){
   ctx.globalAlpha=.9;
   for(let x=Math.floor(left/tile)*tile;x<=right;x+=tile)for(let y=Math.floor(top/tile)*tile;y<=bottom;y+=tile){const p=ws(x,y);ctx.drawImage(MAP_TEXTURE.image,p.x,p.y,tile*z,tile*z)}
  }else{
-  ctx.fillStyle='#171415';ctx.fillRect(0,0,innerWidth,innerHeight);
+  ctx.fillStyle='#3a3024';ctx.fillRect(0,0,innerWidth,innerHeight);
+  // 简易网格替代
+  ctx.strokeStyle='rgba(90,70,45,.2)';ctx.lineWidth=1;
+  for(let x=Math.floor(left/tile)*tile;x<=right;x+=tile){const p=ws(x,0);ctx.beginPath();ctx.moveTo(p.x,0);ctx.lineTo(p.x,innerHeight);ctx.stroke()}
+  for(let y=Math.floor(top/tile)*tile;y<=bottom;y+=tile){const p=ws(0,y);ctx.beginPath();ctx.moveTo(0,p.y);ctx.lineTo(innerWidth,p.y);ctx.stroke()}
  }
  ctx.fillStyle='rgba(5,4,5,.14)';ctx.fillRect(0,0,innerWidth,innerHeight);
  const bounds=CONFIG.map.bounds,tl=ws(bounds.minX,bounds.minY),br=ws(bounds.maxX,bounds.maxY);
@@ -1493,10 +1497,10 @@ function drawEffect(ef){
    const progress=1-ef.life/ef.maxLife,z=viewZoom();ctx.globalAlpha=clamp(ef.life/ef.maxLife,.1,1);ctx.translate(p.x,p.y);ctx.fillStyle='#cbb8a4';ctx.strokeStyle='#8f2732';ctx.lineWidth=2;for(let i=0;i<9;i++){const a=i/9*Math.PI*2,r=ef.r*z*(.25+(i%3)*.15),h=ef.r*z*(.35+.25*progress);ctx.save();ctx.rotate(a);ctx.translate(r,0);ctx.beginPath();ctx.moveTo(-5*z,5*z);ctx.lineTo(0,-h);ctx.lineTo(5*z,5*z);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
   }
   if(ef.type==='eyeGaze'){
-   const z=viewZoom();ctx.globalAlpha=clamp(ef.life/ef.maxLife,.12,.72);ctx.translate(p.x,p.y);ctx.rotate(ef.angle);ctx.fillStyle=ef.evolved?'rgba(188,201,194,.2)':'rgba(157,40,49,.24)';ctx.strokeStyle=ef.evolved?'rgba(232,222,198,.88)':'rgba(205,95,92,.78)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,ef.r*z,-ef.halfAngle,ef.halfAngle);ctx.closePath();ctx.fill();ctx.stroke();
+   const z=viewZoom();ctx.globalAlpha=clamp(ef.life/ef.maxLife,.12,.72);ctx.translate(p.x,p.y);ctx.rotate(ef.angle);ctx.fillStyle=ef.evolved?'rgba(160,180,190,.18)':'rgba(140,130,150,.2)';ctx.strokeStyle=ef.evolved?'rgba(180,190,200,.8)':'rgba(160,150,170,.7)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,ef.r*z,-ef.halfAngle,ef.halfAngle);ctx.closePath();ctx.fill();ctx.stroke();
   }
   if(ef.type==='bahuiEye'){
-   const fade=clamp(ef.life/ef.maxLife,0,1),cx=innerWidth/2,cy=innerHeight*.24,w=Math.min(innerWidth*.42,360),h=w*.34;ctx.globalAlpha=fade;ctx.fillStyle='rgba(10,8,12,.48)';ctx.fillRect(0,0,innerWidth,innerHeight);ctx.fillStyle='rgba(226,219,199,.88)';ctx.strokeStyle='rgba(123,26,35,.92)';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(cx-w/2,cy);ctx.quadraticCurveTo(cx,cy-h,cx+w/2,cy);ctx.quadraticCurveTo(cx,cy+h,cx-w/2,cy);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#8e2632';ctx.beginPath();ctx.ellipse(cx,cy,h*.42,h*.7,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#08070a';ctx.beginPath();ctx.ellipse(cx,cy,h*.12,h*.62,0,0,Math.PI*2);ctx.fill();
+   const fade=clamp(ef.life/ef.maxLife,0,1),cx=innerWidth/2,cy=innerHeight*.24,w=Math.min(innerWidth*.42,360),h=w*.34;ctx.globalAlpha=fade;ctx.fillStyle='rgba(20,15,25,.35)';ctx.fillRect(0,0,innerWidth,innerHeight);ctx.fillStyle='rgba(180,170,190,.7)';ctx.strokeStyle='rgba(100,80,120,.8)';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(cx-w/2,cy);ctx.quadraticCurveTo(cx,cy-h,cx+w/2,cy);ctx.quadraticCurveTo(cx,cy+h,cx-w/2,cy);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#8e2632';ctx.beginPath();ctx.ellipse(cx,cy,h*.42,h*.7,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#08070a';ctx.beginPath();ctx.ellipse(cx,cy,h*.12,h*.62,0,0,Math.PI*2);ctx.fill();
    }
   if(ef.type==='liSuiGrab'){
     const from=ws(ef.x,ef.y),to=ws(ef.targetX,ef.targetY),fade=clamp(ef.life/ef.maxLife,0,1);ctx.globalAlpha=fade;ctx.strokeStyle=ef.xuanpin?'rgba(222,217,203,.9)':'rgba(218,207,188,.86)';ctx.lineWidth=ef.xuanpin?11:9;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.bezierCurveTo((from.x+to.x)/2+Math.sin(ef.seed)*28,(from.y+to.y)/2-36,(from.x+to.x)/2-20,(from.y+to.y)/2+28,to.x,to.y);ctx.stroke();ctx.strokeStyle='rgba(47,39,42,.97)';ctx.lineWidth=ef.xuanpin?7:6;ctx.stroke();ctx.strokeStyle=ef.xuanpin?'rgba(196,152,83,.85)':'rgba(154,54,54,.78)';ctx.lineWidth=2;ctx.stroke();
@@ -1631,7 +1635,7 @@ function startNewRun(){
  document.querySelectorAll('.skipExtra').forEach(el=>el.remove());
  startPanel.style.display='none';levelPanel.style.display='none';endPanel.style.display='none';
  pauseBtn.style.display='block';pauseBtn.textContent='暂停';
- if(!window.matchMedia('(pointer:fine) and (min-width:900px)').matches){dodgeBtn.style.display='block';muteBtn.style.display='block';ultBtn.style.display='block'}
+ if(!window.matchMedia('(pointer:fine) and (min-width:900px)').matches){dodgeBtn.style.display='block';muteBtn.style.display='block';if(player.weapons.ultimate.lv>0)ultBtn.style.display='block'}
  muteBtn.style.display='block';
  last=performance.now();updateUI();showMessage('荒村起雾。');
 }

@@ -47,7 +47,7 @@
         { id: "cave-se", type: "circle", x: 1300, y: -500, r: 65, label: "窑洞" },
       ],
     },
-    activeWeaponKeys: ["coin", "you", "suisui", "fire", "blood", "general"],
+    activeWeaponKeys: ["coin", "you", "suisui", "fire", "blood", "general", "ultimate"],
     weaponTrees: {
       coin: { evolveAt: 7, evolvedName: "铜钱悬剑" },
       suisui: { choiceAt: 4, evolvedName: "李岁", finalAt: 7, finalName: "玄牝" },
