@@ -237,7 +237,7 @@ const player={
   coin:{name:'七星铜钱剑',lv:1,cd:0,evolved:false,returnCd:0},
   you:{name:'游老爷',lv:0,cd:0,evolved:false},
   suisui:{name:'黑太岁',lv:0,cd:0,evolved:false,form:'black',castUntil:0},
-  fire:{name:'献祭皮肤',lv:0,cd:0,evolved:false,active:0,trailCd:0},
+  fire:{name:'人皮焚身',lv:0,cd:0,evolved:false,active:0,trailCd:0},
   blood:{name:'大千录',lv:0,cd:0,evolved:false,branch:null},
   general:{name:'献祭眼球',lv:0,cd:0,evolved:false}
  },
@@ -681,8 +681,9 @@ function useFire(dt){
  if(w.cd>0)return;
  applySacrificeBurst(CONFIG.sacrifice.skinBurstRatio,'焚皮');
  w.active=2.8+(lv>=4?1.2:0)+(w.evolved?1.5:0);w.trailCd=0;
- state.effects.push({type:w.evolved?'bewilderedBurn':'skinIgnite',x:player.x,y:player.y,r:w.evolved?Math.max(innerWidth,innerHeight):radius*1.8,life:w.evolved?1.2:.65,maxLife:w.evolved?1.2:.65,color:'rgba(173,42,42,.55)'});
- if(w.evolved)for(const e of [...state.enemies]){const damage=e.boss?e.maxHp*.025:Math.max(38,e.maxHp*(e.elite?.07:.35));damageEnemy(e,Math.min(damage,e.boss?360:700))}
+ state.effects.push({type:'skinIgnite',x:player.x,y:player.y,r:radius*1.8,life:.65,maxLife:.65,color:'rgba(173,42,42,.55)'});
+ for(const e of [...state.enemies]){if(Math.hypot(player.x-e.x,player.y-e.y)<radius*1.8+e.r)damageEnemy(e,18*atkMul())}
+ if(w.evolved){scheduleGameTask(1500,()=>{if(state.gameOver||state.paused)return;state.effects.push({type:'ring',x:player.x,y:player.y,r:radius*2.5,life:.7,maxLife:.7,color:'rgba(200,120,60,.8)',text:'火袄蜒行'});for(const e of [...state.enemies]){if(Math.hypot(player.x-e.x,player.y-e.y)<radius*2.5+e.r){damageEnemy(e,40*atkMul());e.slow=.5}}})}
  w.cd=(w.evolved?18:7.8*(lv>=6?.82:1))*cdMul();
 }
 
@@ -741,7 +742,7 @@ function weaponDesc(k,lv){
   coin:['远程发射铜钱短剑','伤害提升','连射 +1','穿透 +1','伤害提升','攻速和穿透提升','进化：铜钱悬剑'],
   you:['召出游老爷弧线追踪','伤害范围提升','冷却降低','数量 +1','速度提升','冷却降低','数量 +1','伤害提升'],
   suisui:['黑太岁触须近身扫击','触须距离提升','触须数量 +1','解锁进化选择：接纳李岁','伤害提升','李岁缠取目标 +1','进化：玄牝，扩大缠取与收束领域'],
-  fire:['周期披上献祭火衣并留火','火衣伤害提升','火衣范围提升','持续时间提升','火痕数量增加','冷却降低','进化：迷惘焚身'],
+  fire:['周期披上献祭火衣并留火','火衣伤害提升','火衣范围提升','持续时间提升','火痕数量增加','冷却降低','进化：火袄蜒行'],
   blood:['甲钉：发射回旋甲片','甲钉伤害穿透提升','血牙：成排牙齿贯穿怪群','血牙数量与穿透提升','血牙速度射程提升','指骨：近中距斜向穿刺','三祭合流：三种形态交替齐发'],
   general:['扇形邪光定身敌人','冷却降低','扇形范围增加','反方向再扫一次','停顿时间增加','四向轮流扫射','进化：巴虺一瞥']
  };
@@ -814,7 +815,7 @@ function updateWeaponName(key){
  }
  if(w.lv>=tree.evolveAt){w.evolved=true;w.name=tree.evolvedName}
  else if(key==='coin')w.name='七星铜钱剑';
- else if(key==='fire')w.name='献祭皮肤';
+ else if(key==='fire')w.name='人皮焚身';
  else if(key==='general')w.name='献祭眼球';
 }
 

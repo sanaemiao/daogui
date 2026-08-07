@@ -53,7 +53,7 @@
           finger: { name: "指祭", evolvedName: "裂指成林" },
         },
       },
-      fire: { evolveAt: 7, evolvedName: "迷惘焚身" },
+      fire: { evolveAt: 7, evolvedName: "火袄蜒行" },
       general: { evolveAt: 7, evolvedName: "巴虺一瞥" },
     },
     sprites: {
