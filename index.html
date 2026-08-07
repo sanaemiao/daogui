@@ -470,6 +470,11 @@ function spawnElite(kind){
   state.enemies.push({...def,x,y,hp:def.hp,maxHp:def.hp,dmg:def.damage,r:def.size,boss:false,elite:true,hitCd:0,slow:0,animOffset:0,sweepCd:1.8,pounceCd:3.8,pollutionCd:2.6,pounceWindup:0,pounceTime:0,pounceAngle:0});
   showMessage('一条布满触须与臭孔的黑太岁邪祟翻出泥地。');
  }
+ if(kind==='renxiao'){
+  const def=CONFIG.eliteRenxiao;
+  state.enemies.push({...def,x,y,hp:def.hp,maxHp:def.hp,dmg:def.damage,r:def.size,boss:false,elite:true,hitCd:0,slow:0,animOffset:0,sweepCd:1.8,pounceCd:3.8,pollutionCd:2.6,pounceWindup:0,pounceTime:0,pounceAngle:0});
+  showMessage('一个歪斜的道人从山路尽头蹒跚而来。');
+ }
  if(kind==='xishen'){
   const def=CONFIG.eliteXishen;
   state.enemies.push({...def,x,y,hp:def.hp,maxHp:def.hp,dmg:def.damage,r:def.size,boss:false,elite:true,hitCd:0,slow:0,animOffset:0,shadowCd:2.4,laneCd:1.6,faceFlip:0});
@@ -478,10 +483,16 @@ function spawnElite(kind){
 }
 
 function spawnBoss(kind){
- if(kind!=='danyangzi')return;
- const def=CONFIG.bossDanyangzi,x=clamp(player.x+playWidth()/2-80,CONFIG.map.bounds.minX+100,CONFIG.map.bounds.maxX-100),y=clamp(player.y,CONFIG.map.bounds.minY+100,CONFIG.map.bounds.maxY-100);
- state.enemies.push({...def,x,y,hp:def.hp,maxHp:def.hp,dmg:def.damage,r:def.size,boss:true,elite:false,phase:1,hitCd:0,slow:0,animOffset:0,fireCd:2.2,bellCd:3.4,wingCd:4.2,transforming:0});
- showMessage('丹阳子提着炼丹炉走进了荒村。');
+ if(kind==='danyangzi'){
+  const def=CONFIG.bossDanyangzi,x=clamp(player.x+playWidth()/2-80,CONFIG.map.bounds.minX+100,CONFIG.map.bounds.maxX-100),y=clamp(player.y,CONFIG.map.bounds.minY+100,CONFIG.map.bounds.maxY-100);
+  state.enemies.push({...def,x,y,hp:def.hp,maxHp:def.hp,dmg:def.damage,r:def.size,boss:true,elite:false,phase:1,hitCd:0,slow:0,animOffset:0,fireCd:2.2,bellCd:3.4,wingCd:4.2,transforming:0});
+  showMessage('丹阳子提着炼丹炉走进了荒村。');
+ }
+ if(kind==='sanhua'){
+  const def=CONFIG.bossSanhua,x=clamp(player.x+playWidth()/2-80,CONFIG.map.bounds.minX+100,CONFIG.map.bounds.maxX-100),y=clamp(player.y,CONFIG.map.bounds.minY+100,CONFIG.map.bounds.maxY-100);
+  state.enemies.push({...def,x,y,hp:def.hp,maxHp:def.hp,dmg:def.damage,r:def.size,boss:true,elite:false,phase:2,hitCd:0,slow:0,animOffset:0,fireCd:1.8,bellCd:2.8,wingCd:3.5,transforming:0});
+  showMessage('三花聚顶！丹阳子以最终形态降临。');
+ }
 }
 
 function triggerFlowEvent(event){
@@ -603,7 +614,7 @@ function killEnemy(e){
  if(e.id==='eliteXishen'){
   showMessage('腊月十八的身影散去了。');
  }
- if(e.id==='bossDanyangzi'){
+ if(e.id==='bossDanyangzi'||e.id==='bossSanhua'){
   state.milestoneComplete=true;
   sfx.boss();
   showMessage('三颗头颅同时闭上了嘴。');
@@ -1007,7 +1018,7 @@ function updateXishenElite(e,dt){
 
 function updateDanyangziBoss(e,dt){
  const def=CONFIG.bossDanyangzi,sm=e.slow>0?.58:1;
- if(e.phase===1&&e.hp/e.maxHp<=def.phaseTwoAt){
+ if(e.phase===1&&e.hp/e.maxHp<=def.phaseTwoAt&&e.id!=='bossSanhua'){
   e.phase=2;e.r=Math.round(def.size*1.28);e.speed=def.speed*1.16;e.dmg=def.damage+5;
   state.effects.push({type:'ring',x:e.x,y:e.y,r:190,life:.85,maxLife:.85,color:'rgba(171,69,48,.92)',text:'三花聚顶'});
   state.shakeX=rand(-6,6);state.shakeY=rand(-5,5);state.hitstop=.1;
@@ -1037,9 +1048,9 @@ function updateDanyangziBoss(e,dt){
 
 function updateEnemyBehavior(e,dt){
  const sm=e.slow>0?.5:1;
- if(e.id==='eliteBlackTaisui'){updateBlackTaisuiElite(e,dt);return}
+ if(e.id==='eliteBlackTaisui'||e.id==='eliteRenxiao'){updateBlackTaisuiElite(e,dt);return}
  if(e.id==='eliteXishen'){updateXishenElite(e,dt);return}
- if(e.id==='bossDanyangzi'){updateDanyangziBoss(e,dt);return}
+ if(e.id==='bossDanyangzi'||e.id==='bossSanhua'){updateDanyangziBoss(e,dt);return}
  if(e.crossing){
   e.x+=e.crossingVx*dt;e.y+=Math.sin(state.time*2+e.driftPhase)*8*dt;e.crossingLife-=dt;
   if(e.crossingLife<=0){const i=state.enemies.indexOf(e);if(i>=0)state.enemies.splice(i,1)}
@@ -1232,9 +1243,10 @@ function drawLiSuiCompanion(){
 }
 
 function drawEnemySprite(e){
- if(e.id==='eliteBlackTaisui')return drawBlackTaisuiElite(e);
+ if(e.id==='eliteBlackTaisui'||e.id==='eliteRenxiao')return drawBlackTaisuiElite(e);
  // Boss 占位图像绘制
- if(e.id==='bossDanyangzi'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=(e.phase===2?140:110)*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=e.phase===2?.92:.78;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);if(e.phase===2){ctx.strokeStyle='rgba(180,90,50,.55)';ctx.lineWidth=4*z;ctx.beginPath();ctx.arc(0,0,sz*.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#b85a30';ctx.font=`bold ${Math.max(10,16*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.6)}ctx.restore();return sz}}else if(e.id==='eliteXishen'){const img=BOSS_SPRITES.xishen.image;const p=ws(e.x,e.y),z=viewZoom(),sz=96*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.75;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.restore();return sz}}
+ if(e.id==='bossDanyangzi'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=(e.phase===2?140:110)*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=e.phase===2?.92:.78;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);if(e.phase===2){ctx.strokeStyle='rgba(180,90,50,.55)';ctx.lineWidth=4*z;ctx.beginPath();ctx.arc(0,0,sz*.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#b85a30';ctx.font=`bold ${Math.max(10,16*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.6)}ctx.restore();return sz}}
+ if(e.id==='bossSanhua'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=160*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.92;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.strokeStyle='rgba(200,100,50,.7)';ctx.lineWidth=5*z;ctx.beginPath();ctx.arc(0,0,sz*.52,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#d06030';ctx.font=`bold ${Math.max(12,20*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.55);ctx.restore();return sz}}else if(e.id==='eliteXishen'){const img=BOSS_SPRITES.xishen.image;const p=ws(e.x,e.y),z=viewZoom(),sz=96*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.75;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.restore();return sz}}
  const def=ENEMY_SPRITES[e.id];
  if(!def||!def.image.complete||!def.image.naturalWidth)return 0;
  const p=ws(e.x,e.y),z=viewZoom();
