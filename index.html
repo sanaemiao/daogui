@@ -487,7 +487,7 @@ function debugJumpToNextNode(){
  if(target>=110)player.weapons.you.lv=Math.max(player.weapons.you.lv,2);
  if(target>=230)player.weapons.suisui.lv=Math.max(player.weapons.suisui.lv,2);
  if(target>=350)player.weapons.blood.lv=Math.max(player.weapons.blood.lv,1);
- if(target>=470){player.weapons.coin.lv=Math.max(player.weapons.coin.lv,3);player.weapons.you.lv=Math.max(player.weapons.you.lv,3);player.weapons.suisui.lv=Math.max(player.weapons.suisui.lv,4);player.weapons.suisui.form='lisui';player.weapons.fire.lv=Math.max(player.weapons.fire.lv,2);player.weapons.blood.lv=Math.max(player.weapons.blood.lv,3);player.weapons.blood.branch||='tooth';player.weapons.general.lv=Math.max(player.weapons.general.lv,2)}
+ if(target>=470){player.weapons.coin.lv=Math.max(player.weapons.coin.lv,3);player.weapons.you.lv=Math.max(player.weapons.you.lv,3);player.weapons.suisui.lv=Math.max(player.weapons.suisui.lv,4);player.weapons.suisui.form='lisui';player.weapons.fire.lv=Math.max(player.weapons.fire.lv,2);player.weapons.blood.lv=Math.max(player.weapons.blood.lv,3);player.weapons.general.lv=Math.max(player.weapons.general.lv,2)}
  if(target>=590){player.weapons.coin.lv=Math.max(player.weapons.coin.lv,7);player.weapons.you.lv=Math.max(player.weapons.you.lv,5);player.weapons.suisui.lv=Math.max(player.weapons.suisui.lv,7);player.weapons.suisui.form='lisui';player.weapons.fire.lv=Math.max(player.weapons.fire.lv,5);player.weapons.blood.lv=Math.max(player.weapons.blood.lv,6);player.weapons.general.lv=Math.max(player.weapons.general.lv,5)}
  for(const key of ACTIVE_WEAPON_KEYS)updateWeaponName(key);
  showMessage(`调试跳转：${formatClock(target)}`);
@@ -521,7 +521,6 @@ function grantChestReward(){
   player.weapons[pick.key].lv++;
   updateWeaponName(pick.key);
   showMessage(`箱子：${player.weapons[pick.key].name} 升级`);
-  if(pick.key==='blood'&&player.weapons.blood.lv===CONFIG.weaponTrees.blood.branchAt&&!player.weapons.blood.branch){showBloodBranchChoice();return}
  }else{
   applyPassive(pick.key);
   showMessage(`箱子：${player.passives[pick.key].name} 升级`);
@@ -690,19 +689,21 @@ function useFire(dt){
 function useBlood(dt){
  const w=player.weapons.blood;if(w.lv<=0)return;w.cd-=dt;if(w.cd>0)return;
  const lv=w.lv,target=densestTarget(920);if(!target)return;
- const baseAngle=Math.atan2(target.y-player.y,target.x-player.x),branch=w.branch;
+ const baseAngle=Math.atan2(target.y-player.y,target.x-player.x);
  const make=(type,angle,speed,dmg,r,life,pierce,extra={})=>state.bullets.push({type,x:player.x,y:player.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,dmg:dmg*atkMul(),r,life,pierce,hit:new Set(),age:0,color:'#bd3140',...extra});
- if(!branch){
-  const count=1+(lv>=2?1:0);for(let i=0;i<count;i++){const type=i%2?'daqianNail':'daqianTooth';make(type,baseAngle+(i-(count-1)/2)*.16,type==='daqianTooth'?370:300,42+(lv>=2?10:0),type==='daqianTooth'?5:8,2.2,lv>=2?2:1,type==='daqianNail'?{returnAfter:.72}: {})}
- }else if(branch==='tooth'){
-  const count=2+(lv>=6?2:0)+(w.evolved?2:0);for(let i=0;i<count;i++)make('daqianTooth',baseAngle+(i-(count-1)/2)*(w.evolved?.13:.09),430+(lv>=5?55:0),38+(lv>=4?12:0),5,2.5,3+(lv>=4?1:0)+(w.evolved?3:0));
- }else if(branch==='nail'){
-  const count=2+(lv>=6?2:0)+(w.evolved?2:0);for(let i=0;i<count;i++)make('daqianNail',baseAngle+(i-(count-1)/2)*.21,315,34+(lv>=5?12:0),9+(w.evolved?3:0),3.4,2,{returnAfter:w.evolved?.9:.72,orbitOnReturn:w.evolved});
+ if(lv<3){
+  const count=1+(lv>=2?1:0);for(let i=0;i<count;i++)make('daqianNail',baseAngle+(i-(count-1)/2)*.16,300,42+(lv>=2?10:0),8,2.2,lv>=2?2:1,{returnAfter:.72});
+ }else if(lv<6){
+  const count=2+(lv>=4?1:0)+(lv>=5?1:0);for(let i=0;i<count;i++)make('daqianTooth',baseAngle+(i-(count-1)/2)*.09,400+(lv>=5?40:0),38+(lv>=4?10:0),5,2.5,2+(lv>=4?1:0));
+ }else if(lv<7){
+  const count=5,spread=.82;for(let i=0;i<count;i++)make('daqianFinger',baseAngle-spread/2+spread*i/(count-1),310,38,6,.72,0,{knockback:20});
  }else{
-  const count=5+(lv>=6?2:0)+(w.evolved?2:0),spread=w.evolved?1.18:.82;for(let i=0;i<count;i++)make('daqianFinger',baseAngle-spread/2+spread*i/Math.max(1,count-1),310,31+(lv>=5?15:0)+(w.evolved?10:0),6,.72,0,{knockback:lv>=5?28:14,spawnSpikes:w.evolved});
+  for(let i=0;i<2;i++)make('daqianNail',baseAngle+(i-.5)*.16,310,44,8,2.5,2,{returnAfter:.72});
+  for(let i=0;i<3;i++)make('daqianTooth',baseAngle+(i-1)*.1,440,42,5,2.8,3);
+  const count=6,spread=.9;for(let i=0;i<count;i++)make('daqianFinger',baseAngle-spread/2+spread*i/(count-1),320,35,6,.72,0,{knockback:24,spawnSpikes:true});
  }
  state.effects.push({type:'daqian',x:player.x,y:player.y,r:72,targets:[{x:target.x,y:target.y}],sacrifice:player.sacrifice.last,life:.62,maxLife:.62,color:'rgba(156,14,24,.86)'});
- w.cd=(branch==='finger'?3.6:branch==='tooth'?3.2:3.9)*(lv>=5?.9:1)*cdMul();
+ w.cd=(lv<3?3.9:(lv<6?3.2:3.6))*(lv>=5?.9:1)*cdMul();
 }
 
 function updateSacrificeLedger(dt){
@@ -736,13 +737,12 @@ function evolveOptions(){
  return [];
 }
 function weaponDesc(k,lv){
- const bloodBranch=player.weapons.blood.branch;
  const m={
   coin:['远程发射铜钱短剑','伤害提升','连射 +1','穿透 +1','伤害提升','攻速和穿透提升','进化：铜钱悬剑'],
   you:['召出游老爷弧线追踪','伤害范围提升','冷却降低','数量 +1','速度提升','冷却降低','数量 +1','伤害提升'],
   suisui:['黑太岁触须近身扫击','触须距离提升','触须数量 +1','解锁进化选择：接纳李岁','伤害提升','李岁缠取目标 +1','进化：玄牝，扩大缠取与收束领域'],
   fire:['周期披上献祭火衣并留火','火衣伤害提升','火衣范围提升','持续时间提升','火痕数量增加','冷却降低','进化：迷惘焚身'],
-  blood:['随机投出牙齿或指甲','投射物和穿透增加','强制选择牙祭、甲祭或指祭',bloodBranch==='tooth'?'牙弹穿透增加':bloodBranch==='nail'?'甲轮回旋半径增加':'指骨扇形扩大',bloodBranch==='tooth'?'牙弹速度和射程提升':bloodBranch==='nail'?'回程绕身一周':'近距伤害与击退提升',bloodBranch==='tooth'?'同时射出两排牙弹':bloodBranch==='nail'?'甲轮数量增加':'指骨命中后分裂',bloodBranch==='tooth'?'进化：齿雨贯阵':bloodBranch==='nail'?'进化：十甲血轮':'进化：裂指成林'],
+  blood:['甲钉：发射回旋甲片','甲钉伤害穿透提升','血牙：成排牙齿贯穿怪群','血牙数量与穿透提升','血牙速度射程提升','指骨：近中距斜向穿刺','三祭合流：三种形态交替齐发'],
   general:['扇形邪光定身敌人','冷却降低','扇形范围增加','反方向再扫一次','停顿时间增加','四向轮流扫射','进化：巴虺一瞥']
  };
  return m[k]?.[lv-1]||'强化效果';
@@ -799,9 +799,11 @@ function updateWeaponName(key){
  const w=player.weapons[key],tree=CONFIG.weaponTrees[key];
  if(!w||!tree)return;
  if(key==='blood'){
-  const branch=tree.branches[w.branch];
-  if(branch){w.evolved=w.lv>=7;w.name=`大千录·${w.evolved?branch.evolvedName:branch.name}`}
-  else w.name='大千录';
+  if(w.lv<3)w.name='大千录·甲钉';
+  else if(w.lv<6)w.name='大千录·血牙';
+  else if(w.lv<7)w.name='大千录·指骨';
+  else w.name='大千录·三祭';
+  w.evolved=w.lv>=7;
   return;
  }
  if(key==='suisui'){
@@ -824,19 +826,9 @@ function finishLevelChoice(){
  state.paused=false;
 }
 
-function showBloodBranchChoice(){
- state.leveling=true;state.paused=true;levelPanel.style.display='flex';levelOptions.innerHTML='';
- document.querySelector('#levelPanel h2').textContent='大千录 · 选择祭路';
- const branches=[
-  {key:'tooth',title:'牙祭',desc:'高速血牙贯穿成排怪潮；Lv7 进化齿雨贯阵。'},
-  {key:'nail',title:'甲祭',desc:'血甲轮飞出后回旋归身；Lv7 进化十甲血轮。'},
-  {key:'finger',title:'指祭',desc:'近程扇射指骨并击退；Lv7 进化裂指成林。'},
- ];
- for(const branch of branches){const btn=document.createElement('button');btn.className='option';btn.innerHTML=`<b>${branch.title}</b>${branch.desc}`;btn.onclick=()=>{player.weapons.blood.branch=branch.key;updateWeaponName('blood');showMessage(`大千录分支：${branch.title}`);finishLevelChoice()};levelOptions.appendChild(btn)}
-}
 
 function chooseOption(o){
- if(o.type==='weapon'){const w=player.weapons[o.key];w.lv++;updateWeaponName(o.key);showMessage(o.title);if(o.key==='blood'&&w.lv===CONFIG.weaponTrees.blood.branchAt&&!w.branch){showBloodBranchChoice();return}}
+ if(o.type==='weapon'){const w=player.weapons[o.key];w.lv++;updateWeaponName(o.key);showMessage(o.title)}
  if(o.type==='passive'){applyPassive(o.key);showMessage(o.title)}
  if(o.type==='evolve'){
   const w=player.weapons[o.key];
