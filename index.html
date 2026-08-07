@@ -743,7 +743,6 @@ function updateSacrificeLedger(dt){
  if(ledger.tick>0)return;
  const result=COMBAT.takePlayerDamage(player,ledger.pending,DAMAGE.SACRIFICE,{minHp:CONFIG.sacrifice.minHp});
  ledger.last=result.applied;ledger.total+=result.applied;ledger.lastAt=state.time;ledger.pending=0;ledger.tick=CONFIG.sacrifice.ledgerInterval;
- if(result.applied>0)state.texts.push({x:player.x,y:player.y-52,text:`献祭 -${result.applied.toFixed(2)}`,life:1.3,color:'#ff5b60'});
 }
 
 function useEyeSacrifice(dt){
