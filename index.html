@@ -123,6 +123,12 @@ const pauseBtn=document.getElementById('pauseBtn'),dodgeBtn=document.getElementB
 
 const ENEMY_SPRITES=Object.fromEntries(Object.entries(CONFIG.sprites).map(([id,def])=>[id,{...def}]));
 for(const def of Object.values(ENEMY_SPRITES)){def.image=new Image();def.image.src=def.src}
+// Boss 占位素材
+const BOSS_SPRITES={
+ danyangzi:{src:'assets/legacy-reference-v1/丹阳子三花聚顶.png',image:new Image()},
+ xishen:{src:'assets/legacy-reference-v1/腊月十八.png',image:new Image()},
+};
+for(const def of Object.values(BOSS_SPRITES))def.image.src=def.src;
 const PLAYER_SPRITE={
  src:'assets/player-lihuowang-v8/lihuowang-v8-sheet.png',frames:4,fps:8,drawSize:82,image:new Image()
 };
@@ -1227,6 +1233,8 @@ function drawLiSuiCompanion(){
 
 function drawEnemySprite(e){
  if(e.id==='eliteBlackTaisui')return drawBlackTaisuiElite(e);
+ // Boss 占位图像绘制
+ if(e.id==='bossDanyangzi'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=(e.phase===2?140:110)*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=e.phase===2?.92:.78;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);if(e.phase===2){ctx.strokeStyle='rgba(180,90,50,.55)';ctx.lineWidth=4*z;ctx.beginPath();ctx.arc(0,0,sz*.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#b85a30';ctx.font=`bold ${Math.max(10,16*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.6)}ctx.restore();return sz}}else if(e.id==='eliteXishen'){const img=BOSS_SPRITES.xishen.image;const p=ws(e.x,e.y),z=viewZoom(),sz=96*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.75;ctx.translate(p.x,p.y);ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.restore();return sz}}
  const def=ENEMY_SPRITES[e.id];
  if(!def||!def.image.complete||!def.image.naturalWidth)return 0;
  const p=ws(e.x,e.y),z=viewZoom();
