@@ -248,7 +248,8 @@ const player={
   suisui:{name:'黑太岁',lv:0,cd:0,evolved:false,form:'black',castUntil:0},
   fire:{name:'人皮焚身',lv:0,cd:0,evolved:false,active:0,trailCd:0},
   blood:{name:'大千录',lv:0,cd:0,evolved:false,branch:null},
-  general:{name:'献祭眼球',lv:0,cd:0,evolved:false}
+  general:{name:'献祭眼球',lv:0,cd:0,evolved:false},
+  ultimate:{name:'置闰五行',lv:0,cd:0}
  },
  passives:{
   atk:{name:'袄景杀性',lv:0},
@@ -1611,8 +1612,8 @@ function startNewRun(){
  document.querySelectorAll('.skipExtra').forEach(el=>el.remove());
  startPanel.style.display='none';levelPanel.style.display='none';endPanel.style.display='none';
  pauseBtn.style.display='block';pauseBtn.textContent='暂停';
- if(!window.matchMedia('(pointer:fine) and (min-width:900px)').matches){dodgeBtn.style.display='block';if(player.weapons.ultimate.lv>0)ultBtn.style.display='block'}
- if(player.weapons.ultimate.lv>0)ultBtn.style.display='block';
+ if(!window.matchMedia('(pointer:fine) and (min-width:900px)').matches){dodgeBtn.style.display='block';if(player.weapons.ultimate&&player.weapons.ultimate.lv>0)ultBtn.style.display='block'}
+ if(player.weapons.ultimate&&player.weapons.ultimate.lv>0)ultBtn.style.display='block';
  last=performance.now();updateUI();showMessage('荒村起雾。');
 }
 document.getElementById('startBtn').addEventListener('click',startNewRun);
