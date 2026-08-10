@@ -238,32 +238,53 @@ function capCollections(){
 const playWidth=()=>Math.min(innerWidth,1280);
 const playHeight=()=>Math.min(innerHeight,800);
 
-const player={
- x:0,y:0,r:15,hp:125,maxHp:125,speed:230,level:1,exp:0,needExp:36,atk:1,regenPercent:0,pickup:82,invuln:0,waxShield:0,facing:1,dodgeCd:0,dodgeActive:0,ultimate:{name:'置闰五行',lv:0,cd:0},ultimateTimer:0,ultimateBoost:0,
- sacrifice:{last:0,total:0,lastAt:-999,pending:0,tick:CONFIG.sacrifice.ledgerInterval},
- states:{bewildered:false,canDamage:true,canPassEnemies:false,opacity:1},
- weapons:{
-  coin:{name:'七星铜钱剑',lv:1,cd:0,evolved:false,returnCd:0},
-  you:{name:'游老爷',lv:0,cd:0,evolved:false},
-  suisui:{name:'黑太岁',lv:0,cd:0,evolved:false,form:'black',castUntil:0},
-  fire:{name:'人皮焚身',lv:0,cd:0,evolved:false,active:0,trailCd:0},
-  blood:{name:'大千录',lv:0,cd:0,evolved:false,branch:null},
-  general:{name:'献祭眼球',lv:0,cd:0,evolved:false},
-  ultimate:{name:'置闰五行',lv:0,cd:0}
- },
- passives:{
-  atk:{name:'袄景杀性',lv:0},
-  hp:{name:'护身符',lv:0},
-  regen:{name:'火袄箴经',lv:0},
-  sense:{name:'心素感知',lv:0},
-  cd:{name:'行炁周天',lv:0},
-  speed:{name:'缩地符',lv:0},
-  area:{name:'阵势铺陈',lv:0},
-  luck:{name:'监天司封赏',lv:0}
- }
+// 技能键唯一默认值来源：与 stage1-config.activeWeaponKeys 一一对应，禁止双源漂移
+const WEAPON_DEFAULTS={
+ coin:()=>({name:'七星铜钱剑',lv:1,cd:0,evolved:false,returnCd:0}),
+ you:()=>({name:'游老爷',lv:0,cd:0,evolved:false}),
+ suisui:()=>({name:'黑太岁',lv:0,cd:0,evolved:false,form:'black',castUntil:0}),
+ fire:()=>({name:'人皮焚身',lv:0,cd:0,evolved:false,active:0,trailCd:0}),
+ blood:()=>({name:'大千录',lv:0,cd:0,evolved:false,branch:null}),
+ general:()=>({name:'献祭眼球',lv:0,cd:0,evolved:false}),
+ ultimate:()=>({name:'置闰五行',lv:0,cd:0})
 };
+const PASSIVE_DEFAULTS={
+ atk:{name:'袄景杀性',lv:0},
+ hp:{name:'护身符',lv:0},
+ regen:{name:'火袄箴经',lv:0},
+ sense:{name:'心素感知',lv:0},
+ cd:{name:'行炁周天',lv:0},
+ speed:{name:'缩地符',lv:0},
+ area:{name:'阵势铺陈',lv:0},
+ luck:{name:'监天司封赏',lv:0}
+};
+// 启动不变量：config 与运行时技能键必须一致，缺失时立即报错，禁止静默卡死
+function assertConfigIntegrity(){
+ const keys=CONFIG.activeWeaponKeys||[];
+ if(!Array.isArray(keys)||keys.length===0)throw new Error('[DAOGUI-INVARIANT] activeWeaponKeys 缺失或为空');
+ const missingDefaults=keys.filter(k=>!WEAPON_DEFAULTS[k]);
+ if(missingDefaults.length)throw new Error(`[DAOGUI-INVARIANT] activeWeaponKeys 含无默认值键: ${missingDefaults.join(',')}`);
+ const cfgKeys=Object.keys(CONFIG.weaponTrees||{});
+ const treeMissing=cfgKeys.filter(k=>!keys.includes(k));
+ if(treeMissing.length)throw new Error(`[DAOGUI-INVARIANT] weaponTrees 键不在 activeWeaponKeys: ${treeMissing.join(',')}`);
+}
+function createInitialPlayerState(){
+ assertConfigIntegrity();
+ const weapons={};
+ for(const key of CONFIG.activeWeaponKeys){weapons[key]=WEAPON_DEFAULTS[key]()}
+ const p={
+  x:0,y:0,r:15,hp:125,maxHp:125,speed:230,level:1,exp:0,needExp:36,atk:1,regenPercent:0,pickup:82,invuln:0,waxShield:0,facing:1,dodgeCd:0,dodgeActive:0,ultimateTimer:0,ultimateBoost:0,
+  sacrifice:{last:0,total:0,lastAt:-999,pending:0,tick:CONFIG.sacrifice.ledgerInterval},
+  states:{bewildered:false,canDamage:true,canPassEnemies:false,opacity:1},
+  weapons,
+  passives:JSON.parse(JSON.stringify(PASSIVE_DEFAULTS)),
+ };
+ // 二次校验：每个 activeWeaponKeys 键必须有完整武器对象
+ for(const key of CONFIG.activeWeaponKeys){const w=weapons[key];if(!w||typeof w.lv!=='number')throw new Error(`[DAOGUI-INVARIANT] 武器对象缺失/损坏: ${key}`)}
+ return p;
+}
+const player=createInitialPlayerState();
 COMBAT.ensurePlayerState(player);
-const INITIAL_PLAYER_STATE=JSON.parse(JSON.stringify(player));
 const ACTIVE_WEAPON_KEYS=CONFIG.activeWeaponKeys;
 
 const passiveDesc={
@@ -701,15 +722,37 @@ function useSuisui(dt){
 }
 
 function useFire(dt){
- const w=player.weapons.fire;if(w.lv<=0)return;w.cd-=dt;w.active-=dt;w.trailCd-=dt;
- const lv=w.lv,radius=(46+(lv>=3?14:0)+(w.evolved?24:0))*areaMul(),dps=(13+(lv>=2?7:0)+(w.evolved?12:0))*atkMul();
- if(w.active>0&&w.trailCd<=0){state.effects.push({type:'skinFire',x:player.x,y:player.y,r:radius*.45,life:1.2+(lv>=4?.5:0),maxLife:1.8,dps,tick:0,color:'rgba(120,24,28,.4)'});w.trailCd=lv>=5?.34:.52}
- if(w.cd>0)return;
+ const w=player.weapons.fire;if(w.lv<=0)return;w.cd-=dt;if(w.cd>0)return;
+ const lv=w.lv;
+ // 爆燃半径：Lv1 至少 100，升级扩范围；视觉与命中共用同一 radius
+ const radius=(110+(lv>=3?30:0)+(lv>=5?40:0)+(w.evolved?60:0))*areaMul();
+ const instant=(20+(lv>=2?8:0)+(lv>=4?10:0)+(w.evolved?14:0))*atkMul();
+ const burnDps=(8+(lv>=2?4:0)+(lv>=4?4:0)+(w.evolved?5:0))*atkMul();
+ const burnDur=2.5+(lv>=3?.8:0)+(lv>=5?.7:0);
+ const burnInterval=lv>=5?.35:(lv>=3?.45:.55);
  applySacrificeBurst(CONFIG.sacrifice.skinBurstRatio,'焚皮');
- w.active=2.8+(lv>=4?1.2:0)+(w.evolved?1.5:0);w.trailCd=0;
- state.effects.push({type:'skinIgnite',x:player.x,y:player.y,r:radius*1.3,life:.55,maxLife:.55,color:'rgba(173,42,42,.45)'});
- for(const e of [...state.enemies]){if(Math.hypot(player.x-e.x,player.y-e.y)<radius*1.8+e.r)damageEnemy(e,18*atkMul())}
- if(w.evolved){scheduleGameTask(1500,()=>{if(state.gameOver||state.paused)return;state.effects.push({type:'ring',x:player.x,y:player.y,r:radius*2.5,life:.7,maxLife:.7,color:'rgba(200,120,60,.8)',text:'火袄蜒行'});for(const e of [...state.enemies]){if(Math.hypot(player.x-e.x,player.y-e.y)<radius*2.5+e.r){damageEnemy(e,40*atkMul());e.slow=.5}}})}
+ // 角色中心单次爆燃：视觉环与命中同半径
+ state.effects.push({type:'skinIgnite',x:player.x,y:player.y,r:radius,life:.55,maxLife:.55,color:'rgba(173,42,42,.45)'});
+ for(const e of [...state.enemies]){
+  if(Math.hypot(player.x-e.x,player.y-e.y)<radius+e.r){
+   damageEnemy(e,instant);
+   // 灼烧DOT：已有灼烧则刷新（不叠层爆炸）
+   e.burn={dps:burnDps,remaining:burnDur,interval:burnInterval,tick:burnInterval};
+  }
+ }
+ if(w.evolved){
+  scheduleGameTask(1500,()=>{
+   if(state.gameOver||state.paused)return;
+   const r2=radius*.75;
+   state.effects.push({type:'ring',x:player.x,y:player.y,r:r2,life:.6,maxLife:.6,color:'rgba(200,120,60,.8)',text:'火袄蜒行'});
+   for(const e of [...state.enemies]){
+    if(Math.hypot(player.x-e.x,player.y-e.y)<r2+e.r){
+     damageEnemy(e,instant*.9);
+     e.burn={dps:burnDps,remaining:burnDur,interval:burnInterval,tick:burnInterval};
+    }
+   }
+  });
+ }
  w.cd=(w.evolved?18:7.8*(lv>=6?.82:1))*cdMul();
 }
 
@@ -718,15 +761,17 @@ function useBlood(dt){
  const lv=w.lv,target=densestTarget(920);if(!target)return;
  const baseAngle=Math.atan2(target.y-player.y,target.x-player.x);
  const make=(type,angle,speed,dmg,r,life,pierce,extra={})=>state.bullets.push({type,x:player.x,y:player.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,dmg:dmg*atkMul(),r,life,pierce,hit:new Set(),age:0,color:'#bd3140',...extra});
- if(lv<3){
+ if(lv===1){
   const count=2;for(let i=0;i<count;i++)make('daqianNail',baseAngle+(i-(count-1)/2)*.16,310,48,8,2.3,2,{returnAfter:.72});
  }else if(lv===2){
   const count=3;for(let i=0;i<count;i++)make('daqianNail',baseAngle+(i-(count-1)/2)*.14,320,54,8,2.3,2,{returnAfter:.72});
- }else if(lv<6){
-  const count=4+(lv>=5?1:0);for(let i=0;i<count;i++)make('daqianTooth',baseAngle+(i-(count-1)/2)*.09,420+(lv>=5?40:0),44+(lv>=4?12:0),5,2.5,2+(lv>=4?1:0));
+ }else if(lv===3){
+  const count=4;for(let i=0;i<count;i++)make('daqianTooth',baseAngle+(i-(count-1)/2)*.09,420,44,5,2.5,2);
  }else if(lv===4){
-  const count=5;for(let i=0;i<count;i++)make('daqianTooth',baseAngle+(i-(count-1)/2)*.08,430,50,5,2.5,3);
- }else if(lv<7){
+  const count=5;for(let i=0;i<count;i++)make('daqianTooth',baseAngle+(i-(count-1)/2)*.08,420,56,5,2.5,3);
+ }else if(lv===5){
+  const count=5;for(let i=0;i<count;i++)make('daqianTooth',baseAngle+(i-(count-1)/2)*.08,460,56,5,2.5,3);
+ }else if(lv===6){
   const count=6,spread=.82;for(let i=0;i<count;i++)make('daqianFinger',baseAngle-spread/2+spread*i/(count-1),320,45,6,.72,0,{knockback:24});
  }else{
   for(let i=0;i<3;i++)make('daqianNail',baseAngle+(i-1)*.16,320,52,8,2.5,2,{returnAfter:.72});
@@ -774,7 +819,7 @@ function weaponDesc(k,lv){
   coin:['远程发射铜钱短剑','伤害提升','连射 +1','穿透 +1','伤害提升','攻速和穿透提升','进化：铜钱悬剑'],
   you:['召出2道游老爷弧线追踪','伤害范围提升','冷却降低','数量 2→3道','速度提升','冷却降低','数量 3→4道','伤害提升'],
   suisui:['黑太岁触须近身扫击','触须距离提升','触须数量 +1','触手强化：数量伤害范围全面提升','伤害提升','缠取目标与距离增加','进化：李岁，缠取收束大范围协战'],
-  fire:['周期披上献祭火衣并留火','火衣伤害提升','火衣范围提升','持续时间提升','火痕数量增加','冷却降低','进化：火袄蜒行'],
+  fire:['中心爆燃AOE并灼烧敌人','灼烧伤害提升','爆燃范围提升','灼烧伤害提升','灼烧更久/跳伤更频','冷却降低','进化：火袄蜒行（延迟二段爆燃）'],
   blood:['甲钉×2：发射回旋甲片','甲钉×3：伤害与数量提升','血牙×4：成排牙齿贯穿怪群','血牙×5：数量与穿透提升','血牙速度射程提升','指骨×6：近中距斜向穿刺','三祭合流：3甲钉+4血牙+7指骨齐发'],
   general:['全方向短促凝视定身','冷却降低','扇形范围增加','反方向再扫一次','停顿时间增加','四向轮流扫射','进化：巴虺一瞥'],
   ultimate:['解锁置闰五行：60s祭期/8s全伤+75%/锁1血','祭期缩短：60s→45s','祭期缩短：45s→30s'],
@@ -1122,6 +1167,7 @@ function update(dt){
 
  for(const e of [...state.enemies]){
   updateEnemyBehavior(e,dt);if(!e.crossing)resolveTerrainCollision(e);e.hitCd=Math.max(0,e.hitCd-dt);e.slow=Math.max(0,e.slow-dt);e.flashTimer=Math.max(0,(e.flashTimer||0)-dt);
+  if(e.burn){e.burn.remaining-=dt;e.burn.tick-=dt;if(e.burn.tick<=0){e.burn.tick=e.burn.interval;if(!e.dead)damageEnemy(e,e.burn.dps*e.burn.interval)}if(e.burn.remaining<=0)delete e.burn}
   if(!e.dead&&Math.hypot(player.x-e.x,player.y-e.y)<player.r+e.r&&e.hitCd<=0){const hit=takePlayerHit(e.dmg,DAMAGE.CONTACT);if(!hit.ignored)e.hitCd=.65}
  }
 
@@ -1169,7 +1215,6 @@ function update(dt){
  for(const ef of [...state.effects]){
   ef.life-=dt;
   if(ef.type==='killSpark'){ef.x+=ef.vx*dt;ef.y+=ef.vy*dt;ef.vx*=.94;ef.vy*=.94;}
-  if(ef.type==='fire'||ef.type==='skinFire'){ef.tick-=dt;if(ef.tick<=0){ef.tick=.25;for(const e of [...state.enemies])if(Math.hypot(ef.x-e.x,ef.y-e.y)<=ef.r+e.r){damageEnemy(e,ef.dps*.25);e.slow=.25}}}
   if(ef.type==='pollution'){ef.tick-=dt;if(ef.tick<=0){ef.tick=.9;if(Math.hypot(player.x-ef.x,player.y-ef.y)<=ef.r+player.r)takePlayerHit(ef.dps*.9,DAMAGE.POLLUTION)}}
   if(ef.type==='eliteSweep'){
    ef.elapsed+=dt;
@@ -1433,9 +1478,6 @@ function drawGrid(){
 function drawEffect(ef){
  const p=ws(ef.x,ef.y);ctx.save();
  if(ef.type==='fire'){ctx.globalAlpha=clamp(ef.life/ef.maxLife,.2,1);ctx.fillStyle=ef.color;ctx.beginPath();ctx.arc(p.x,p.y,ef.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,190,70,.55)';ctx.stroke()}
- if(ef.type==='skinFire'){
-  ctx.globalAlpha=clamp(ef.life/ef.maxLife,.08,.65);ctx.fillStyle='rgba(100,16,20,.35)';ctx.strokeStyle='rgba(200,160,140,.55)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p.x,p.y,ef.r,0,Math.PI*2);ctx.fill();ctx.stroke();
- }
  if(ef.type==='skinIgnite'){const progress=1-ef.life/ef.maxLife;ctx.globalAlpha=clamp(ef.life/ef.maxLife,0,1);ctx.strokeStyle='rgba(221,188,150,.85)';ctx.lineWidth=4;ctx.beginPath();ctx.arc(p.x,p.y,ef.r*progress,0,Math.PI*2);ctx.stroke()}
  if(ef.type==='bewilderedBurn'){
   const progress=1-ef.life/ef.maxLife,grad=ctx.createRadialGradient(p.x,p.y,20,p.x,p.y,Math.max(innerWidth,innerHeight)*.7);grad.addColorStop(0,'rgba(226,214,192,.35)');grad.addColorStop(.38,'rgba(111,21,29,.28)');grad.addColorStop(1,'rgba(41,55,65,.5)');ctx.globalAlpha=clamp(ef.life/ef.maxLife,0,1);ctx.fillStyle=grad;ctx.fillRect(0,0,innerWidth,innerHeight);ctx.strokeStyle='rgba(224,207,178,.8)';ctx.lineWidth=6;ctx.beginPath();ctx.arc(p.x,p.y,progress*Math.max(innerWidth,innerHeight)*.65,0,Math.PI*2);ctx.stroke();
@@ -1585,6 +1627,24 @@ function triggerDodge(){
  showMessage('闪避');
 }
 function togglePause(){if(!state.started||state.leveling||state.gameOver)return;state.paused=!state.paused;state.manualPause=state.paused;pauseBtn.textContent=state.paused?'继续':'暂停';showMessage(state.paused?'暂停':'继续')}
+// 结算：死亡/通关统一入口。幂等：重复调用不重复改状态。
+function endGame(win,text){
+ if(state.gameOver)return;
+ state.gameOver=true;state.paused=true;state.leveling=false;state.manualPause=false;state.tasks.length=0;
+ player.hp=Math.max(0,player.hp);
+ keys.clear();resetStick();
+ pauseBtn.style.display='none';dodgeBtn.style.display='none';ultBtn.style.display='none';levelPanel.style.display='none';
+ endTitle.textContent=win?'通关':'游戏结束';
+ const t=Math.floor(state.time);
+ let skillsHtml='';
+ const ownedWeapons=Object.values(player.weapons).filter(w=>w.lv>0);
+ if(ownedWeapons.length){skillsHtml+='<br><span style="color:#ffd58a">武器</span><br>';ownedWeapons.forEach(w=>{skillsHtml+=`${w.evolved?'★':''}${w.name} Lv${w.lv}<br>`})}
+ const ownedPassives=Object.values(player.passives).filter(p=>p.lv>0);
+ if(ownedPassives.length){skillsHtml+='<br><span style="color:#c8b7a2">被动</span><br>';ownedPassives.forEach(p=>{skillsHtml+=`${p.name} Lv${p.lv}<br>`})}
+ endText.innerHTML=`${text}<br><br>存活时间 ${Math.floor(t/60)}分${t%60}秒 · 击杀 ${state.kill} · Lv ${player.level}${skillsHtml}`;
+ endPanel.style.display='flex';
+ updateUI();
+}
 function autoPause(reason){
  keys.clear();resetStick();
  if(!state.started||state.leveling||state.gameOver||state.paused)return;
@@ -1596,7 +1656,7 @@ addEventListener('blur',()=>autoPause('窗口失去焦点'));
 document.addEventListener('visibilitychange',()=>{if(document.hidden)autoPause('切到后台')});
 pauseBtn.onclick=togglePause;
 function resetPlayerForNewRun(){
- const fresh=JSON.parse(JSON.stringify(INITIAL_PLAYER_STATE));
+ const fresh=createInitialPlayerState();
  for(const key of Object.keys(player))delete player[key];
  Object.assign(player,fresh);
  COMBAT.ensurePlayerState(player);
@@ -1607,6 +1667,7 @@ function startNewRun(){
  state.manualPause=false;
  state.time=0;state.kill=0;state.lastSpawn=0;state.phaseIndex=-1;state.nextFlowEvent=0;state.milestoneComplete=false;state.debugJumpIndex=0;
  state.camera.x=0;state.camera.y=0;
+ state.hitstop=0;state.shakeX=0;state.shakeY=0;state.playerTrail.length=0;
  for(const list of [state.enemies,state.bullets,state.enemyBullets,state.youLaoYe,state.gems,state.effects,state.texts])list.length=0;
  keys.clear();resetStick();resetPlayerForNewRun();
  document.querySelectorAll('.skipExtra').forEach(el=>el.remove());
