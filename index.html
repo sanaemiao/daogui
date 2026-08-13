@@ -286,7 +286,7 @@ const ACTIVE_WEAPON_KEYS=CONFIG.activeWeaponKeys;
 const passiveDesc={
  atk:['攻击力 +10%','攻击力 +20%','攻击力 +30%','攻击力 +40%','攻击力 +55%'],
  hp:['最大气血 +20','最大气血 +40','最大气血 +65','最大气血 +90','最大气血 +120'],
- regen:['每秒回复最大气血 0.10%','每秒回复最大气血 0.20%','每秒回复最大气血 0.32%','每秒回复最大气血 0.46%','每秒回复最大气血 0.60%'],
+ regen:['每秒回复最大气血 0.15%','每秒回复最大气血 0.30%','每秒回复最大气血 0.45%','每秒回复最大气血 0.60%','每秒回复最大气血 0.75%'],
  sense:['弹速/索敌 +10%','弹速/索敌 +20%','弹速/索敌 +30%','弹速/索敌 +40%','弹速/索敌 +60%'],
  cd:['冷却 -5%','冷却 -9%','冷却 -13%','冷却 -17%','冷却 -24%'],
  speed:['移速 +8%','移速 +16%','移速 +24%','移速 +32%','移速 +45%'],
@@ -304,7 +304,7 @@ function applyPassive(k){
  const p=player.passives[k]; if(!p||p.lv>=5)return; p.lv++;
  if(k==='atk')player.atk=[1,1.1,1.2,1.3,1.4,1.55][p.lv];
  if(k==='hp'){const old=player.maxHp;player.maxHp=[125,145,165,190,215,245][p.lv];player.hp+=player.maxHp-old}
- if(k==='regen')player.regenPercent=[0,.001,.002,.0032,.0046,.006][p.lv];
+ if(k==='regen')player.regenPercent=[0,.0015,.003,.0045,.006,.0075][p.lv];
  if(k==='speed')player.speed=230*[1,1.08,1.16,1.24,1.32,1.45][p.lv];
 }
 function showMessage(t){msg.textContent=t;msg.style.opacity=1;clearTimeout(showMessage.t);showMessage.t=setTimeout(()=>msg.style.opacity=0,1500)}
@@ -555,8 +555,9 @@ function collectRewards(dt){
    const seen=new Set();const uniq=[];
    for(const o of active){if(!seen.has(o.key)){seen.add(o.key);uniq.push(o)}}
    for(let i=uniq.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[uniq[i],uniq[j]]=[uniq[j],uniq[i]]}
-   state.rewardPick=uniq.slice(0,3).map(o=>o.key);
+   state.rewardPick=uniq.slice(0,3); // 存完整选项对象（key+title+desc），面板直接使用，不随候选变化缩小
    showMessage('Boss 奖励');
+   showRewardPanel(); // 拾取后直接显示面板（无轮盘延迟）
   }
  }
 }
@@ -573,8 +574,8 @@ function showRewardPanel(){
  document.querySelector('#levelPanel h2').textContent='Boss 奖励：选择一项武器';
  const all=rewardActiveOptions();
  if(all.length===0){state.rewardState='done';const b=document.createElement('button');b.className='option';b.innerHTML='<b>全部武器已满</b><span>本局构筑已达成</span>';b.onclick=()=>{levelPanel.style.display='none';state.leveling=false;state.paused=false;state.revealing=false;state.revealTimer=0;state.rewardState='done'};levelOptions.appendChild(b);levelPanel.style.display='flex';return}
- const byKey={};for(const o of all)byKey[o.key]=o;
- const opts=state.rewardPick.map(k=>byKey[k]).filter(Boolean).slice(0,3);
+ // 直接使用触碰时预选的完整选项（不重算 byKey，避免候选减少导致卡数缩小 3→2→1）
+ const opts=state.rewardPick.filter(o=>o&&o.key).slice(0,3);
  for(const o of opts){const b=document.createElement('button');b.className='option';b.innerHTML='<b>'+o.title+'</b><span>'+o.desc+'</span>';b.onclick=()=>{chooseReward(o)};levelOptions.appendChild(b)}
  levelPanel.style.display='flex';
 }
@@ -851,23 +852,32 @@ function updateSacrificeLedger(dt){
 
 function useEyeSacrifice(dt){
  const w=player.weapons.general;if(w.lv<=0)return;w.cd-=dt;if(w.cd>0)return;
- const target=densestTarget(850);if(!target&&w.lv>1)return;
  applySacrificeBurst(CONFIG.sacrifice.eyeBurstRatio,'祭眼');
- const lv=w.lv,radius=(245+(lv>=3?55:0)+(w.evolved?100:0))*areaMul(),damage=(10+(lv>=5?8:0)+(w.evolved?8:0))*atkMul();
- if(lv===1){
-  // Lv1：全方向短促凝视定身
-  state.effects.push({type:'eyeGaze',x:player.x,y:player.y,angle:0,r:radius,halfAngle:Math.PI,life:.4,maxLife:.4,evolved:false});
-  for(const e of state.enemies){if(Math.hypot(player.x-e.x,player.y-e.y)<radius+e.r){damageEnemy(e,damage*.6);e.slow=Math.max(e.slow,e.boss?.5:e.elite?.8:1.2)}}
- }else{
-  const base=Math.atan2(target.y-player.y,target.x-player.x),directions=lv>=6?4:(lv>=4?2:1),half=.58+(lv>=3?.16:0);
-  for(let i=0;i<directions;i++){
-   const angle=directions===1?base:base+i*Math.PI*2/directions;
-   state.effects.push({type:'eyeGaze',x:player.x,y:player.y,angle,r:radius,halfAngle:half,life:.7,maxLife:.7,evolved:w.evolved});
-   for(const e of state.enemies){const dx=e.x-player.x,dy=e.y-player.y,dist=Math.hypot(dx,dy),a=Math.atan2(dy,dx),diff=Math.abs(Math.atan2(Math.sin(a-angle),Math.cos(a-angle)));if(dist<=radius+e.r&&diff<=half){damageEnemy(e,damage);e.slow=Math.max(e.slow,e.boss?.75:e.elite?1.1:1.45)}}
-  }
+ const lv=w.lv;
+ // 献目定形：全方向圆形凝视（Lv1-6 全圆，Lv7 巴虺之眼全局表现）——OPTION A 全圆契约（见 tests/eye-tree.test.mjs）
+ const radius=(245+(lv>=3?55:0)+(lv>=6?30:0)+(w.evolved?100:0))*areaMul();
+ const damage=(10+(lv>=5?8:0)+(w.evolved?8:0))*atkMul();
+ const slow=(lv>=5?1.6:(lv>=3?1.35:1.15));
+ const pulses=1+(lv>=4?1:0)+(lv>=6?1:0); // Lv4 双波、Lv6 三波
+ const gap=lv>=6?.22:(lv>=4?.3:.4);
+ for(let p=0;p<pulses;p++){
+  const delay=p*gap;
+  if(delay>0)scheduleGameTask(delay*1000,()=>{
+   if(state.gameOver||state.paused)return;
+   eyeGazePulse(radius,damage,slow,w.evolved);
+  });
+  else eyeGazePulse(radius,damage,slow,w.evolved);
  }
  if(w.evolved)state.effects.push({type:'bahuiEye',x:player.x,y:player.y,r:Math.max(innerWidth,innerHeight),life:1.25,maxLife:1.25});
  w.cd=(w.evolved?18:11.5*(lv>=2?.92:1)*(lv>=5?.88:1))*cdMul();
+}
+function eyeGazePulse(radius,damage,slow,evolved){
+ // 全方向圆形凝视：halfAngle=Math.PI 整圆（无扇形）——OPTION A 全圆契约
+ state.effects.push({type:'eyeGaze',x:player.x,y:player.y,angle:0,r:radius,halfAngle:Math.PI,life:.45,maxLife:.45,evolved});
+ for(const e of [...state.enemies]){
+  const dist=Math.hypot(player.x-e.x,player.y-e.y);
+  if(dist<=radius+e.r){damageEnemy(e,damage);e.slow=Math.max(e.slow,slow)}
+ }
 }
 
 function evolveOptions(){return[]}
@@ -878,8 +888,8 @@ function weaponDesc(k,lv){
   suisui:['黑太岁触须近身扫击','触须距离提升','触须数量 +1','触手强化：数量伤害范围提升','进化：李岁，缠取收束协战','李岁伤害提升','李岁强化：缠取范围收束更强'],
   fire:['中心大爆燃AOE+灼烧DOT','灼烧伤害提升','爆燃范围提升','灼烧伤害提升','灼烧更久/跳伤更频','冷却降低','进化：火袄蜒行（延迟二段爆燃刷新DOT）'],
   blood:['甲钉×2：发射回旋甲片','甲钉×3：伤害与数量提升','血牙×4：成排牙齿贯穿怪群','血牙×5：数量与穿透提升','血牙速度射程提升','指骨×6：近中距斜向穿刺','三祭合流：3甲钉+4血牙+7指骨齐发'],
-  general:['全方向短促凝视定身','冷却降低','扇形范围增加','反方向再扫一次','停顿时间增加','四向轮流扫射','进化：巴虺一瞥'],
-  ultimate:['解锁置闰五行：60s祭期/8s全伤+75%/锁1血','祭期缩短：60s→45s','祭期缩短：45s→30s'],
+  general:['全方向圆形凝视定身','冷却降低','凝视范围增加','追加第二次扫视','定身更强·伤害提升','第三次扫视·范围再增','进化：巴虺一瞥（全图凝视）'],
+  ultimate:['获得置闰五行：主动献祭换 8s 全伤+75%','祭期缩短：60s→45s','祭期缩短：45s→30s（Lv3 解锁施展）'],
  };
  return m[k]?.[lv-1]||'强化效果';
 }
@@ -893,14 +903,14 @@ function randomNormalOptions(){
  const opts=[];
  const wk=ACTIVE_WEAPON_KEYS,pk=Object.keys(player.passives);
 
- // 前期保底：避免一整局看不到关键技能
+ // 前期保底：避免一整局看不到关键技能（guarantee 标记优先保留，且不与下方"获得"循环重复）
  if(player.level<=3 && player.weapons.suisui.lv===0){
-  opts.push({type:'weapon',key:'suisui',title:'获得：黑太岁触须',desc:weaponDesc('suisui',1)});
+  opts.push({type:'weapon',key:'suisui',title:'获得：黑太岁触须',desc:weaponDesc('suisui',1),guarantee:true});
  }
  if(player.level<=5 && player.weapons.blood.lv===0){
-  opts.push({type:'weapon',key:'blood',title:'获得：大千录',desc:weaponDesc('blood',1)});
+  opts.push({type:'weapon',key:'blood',title:'获得：大千录',desc:weaponDesc('blood',1),guarantee:true});
  }
- if(player.level>=8&&player.weapons.ultimate.lv===0){opts.push({type:'weapon',key:'ultimate',title:'获得：置闰五行',desc:weaponDesc('ultimate',1)})}
+ if(player.level>=8&&player.weapons.ultimate.lv===0){opts.push({type:'weapon',key:'ultimate',title:'获得：置闰五行',desc:weaponDesc('ultimate',1),guarantee:true})}
 
  for(const k of wk){
   const w=player.weapons[k];
@@ -922,8 +932,15 @@ function randomNormalOptions(){
 
  const unique=[];
  const seen=new Set();
- for(const o of opts.sort(()=>Math.random()-.5)){
-  const id=o.type+o.key+o.title;
+ // 去重按 type+key（同一武器/被动一轮内只出现一次）；guarantee 保底项优先保留
+ const shuffled=[...opts].sort(()=>Math.random()-.5);
+ for(const o of shuffled){
+  if(!o.guarantee)continue;
+  const id=o.type+o.key;
+  if(!seen.has(id)){seen.add(id);unique.push(o)}
+ }
+ for(const o of shuffled){
+  const id=o.type+o.key;
   if(!seen.has(id)){seen.add(id);unique.push(o)}
  }
  if(unique.length===0){
@@ -1014,8 +1031,8 @@ function levelUp(){
 }
 function collectGems(dt){
  for(const g of [...state.gems]){
-  const d=Math.hypot(player.x-g.x,player.y-g.y);
-  if(d<player.pickup){const a=Math.atan2(player.y-g.y,player.x-g.x);g.x+=Math.cos(a)*440*dt;g.y+=Math.sin(a)*440*dt}
+  let d=Math.hypot(player.x-g.x,player.y-g.y);
+  if(d<player.pickup){const a=Math.atan2(player.y-g.y,player.x-g.x);g.x+=Math.cos(a)*440*dt;g.y+=Math.sin(a)*440*dt;d=Math.hypot(player.x-g.x,player.y-g.y)}
   if(d<player.r+14){
    const i=state.gems.indexOf(g);if(i>=0)state.gems.splice(i,1);
    if(g.chest){grantChestReward();for(let p=0;p<6;p++)state.effects.push({type:'killSpark',x:g.x+rand(-8,8),y:g.y+rand(-8,8),vx:rand(-60,60),vy:rand(-60,60),life:rand(.2,.5),maxLife:.5,color:'#ffd700',size:rand(1,3)})}
@@ -1270,7 +1287,7 @@ function updateEnemyBehavior(e,dt){
 
 function update(dt){
  if(!state.started||state.gameOver)return;
- if(state.revealing){state.revealTimer=(state.revealTimer||0)+dt;if(state.revealTimer>=.7){state.revealTimer=0;state.revealing=false;state.rewardState='revealed';showRewardPanel();return}}
+ // 奖励面板已由 collectRewards 直接显示；revealing 仅作标记，不再驱动轮盘延迟
  if(state.paused&&!state.leveling&&levelPanel.style.display!=='flex'&&!state.manualPause)state.paused=false;
  if(!state.started||state.paused||state.gameOver)return;
  if(state.hitstop>0){state.hitstop-=dt;if(state.hitstop>0)return}else state.hitstop=0;
@@ -1278,18 +1295,10 @@ function update(dt){
  if(Math.abs(state.shakeX)<.15)state.shakeX=0;if(Math.abs(state.shakeY)<.15)state.shakeY=0;
  state.time+=dt;
  if(!state.leveling&&!state.paused){
-  // 置闰五行自动献祭
+  // 置闰五行：主动触发（triggerUltimate），此处仅推进强化与冷却计时，不再自动献祭
   if(player.weapons.ultimate&&player.weapons.ultimate.lv>0){
    if(player.ultimateBoost>0)player.ultimateBoost=Math.max(0,player.ultimateBoost-dt);
    else player.ultimateTimer=Math.max(0,player.ultimateTimer-dt);
-   if(player.ultimateTimer<=0&&player.ultimateBoost<=0){
-    const cost=player.hp*CONFIG.sacrifice.ultimateRatio;
-    if(player.hp>CONFIG.sacrifice.minHp)COMBAT.takePlayerDamage(player,cost,DAMAGE.SACRIFICE,{minHp:CONFIG.sacrifice.minHp});
-    const period=player.weapons.ultimate.lv>=3?30:(player.weapons.ultimate.lv>=2?45:60);
-    player.ultimateBoost=8;player.ultimateTimer=period;
-    state.effects.push({type:'ring',x:player.x,y:player.y,r:44,life:.5,maxLife:.5,color:'rgba(100,15,15,.55)'});
-    showMessage(player.hp<=1?'锁一血·全伤强化+75%':'献祭·全伤强化+75%');
-   }
   }
  }
  let dx=0,dy=0;
@@ -1410,7 +1419,23 @@ function drawBlackTaisuiElite(e){
 function drawLiSuiCompanion(){
  const w=player.weapons.suisui;if(w.form==='black')return;
  const def=LISUI_SPRITES[w.form],image=def?.image;
- if(!image||!image.complete||!image.naturalWidth)return;
+ if(!image||!image.complete||!image.naturalWidth){
+  // Canvas 兜底（素材未入库时）：白毛萝莉李穗 / 黑豚玄牝，保留图片优先路径
+  const attacking=state.time<w.castUntil,facing=player.facing||1,anchor=ws(player.x+facing*-58,player.y-34),z=viewZoom(),size=(w.form==='xuanpin'?46:36)*z,bob=Math.sin(state.time*3.1)*2.5*z;
+  ctx.save();ctx.globalAlpha=.96;ctx.translate(anchor.x,anchor.y+bob);ctx.scale(facing,1);
+  if(w.form==='xuanpin'){
+   ctx.fillStyle='#232026';ctx.strokeStyle='#0d0c0e';ctx.lineWidth=1.4*z;ctx.beginPath();ctx.ellipse(0,0,size*.8,size*.42+Math.sin(state.time*4)*2*z,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+   ctx.fillStyle='#ffdfbf';ctx.beginPath();ctx.arc(-size*.3,-size*.1,size*.07,0,Math.PI*2);ctx.arc(size*.3,-size*.1,size*.07,0,Math.PI*2);ctx.fill();
+  }else{
+   ctx.fillStyle='#e8e4da';ctx.strokeStyle='#1a1412';ctx.lineWidth=1*z;ctx.beginPath();ctx.arc(0,-size*.2,size*.3,0,Math.PI*2);ctx.fill();ctx.stroke();
+   ctx.fillStyle='#b03030';ctx.beginPath();ctx.arc(0,0,size*.24,0,Math.PI*2);ctx.fill();ctx.stroke();
+   ctx.fillStyle='#d8a878';ctx.strokeStyle='#1a1412';ctx.beginPath();ctx.arc(0,-size*.32,size*.14,0,Math.PI*2);ctx.fill();ctx.stroke();
+   ctx.fillStyle='#1a1412';ctx.fillRect(-size*.08,-size*.36,size*.05,size*.01);ctx.fillRect(size*.03,-size*.36,size*.05,size*.01);
+   if(attacking){ctx.strokeStyle='#d8c36a';ctx.lineWidth=1.2*z;ctx.beginPath();ctx.moveTo(0,-size*.52);ctx.lineTo(0,-size*.72);ctx.stroke()}
+  }
+  ctx.fillStyle='#f5ecd8';ctx.font=`bold ${Math.max(9,12*z)}px Microsoft YaHei`;ctx.textAlign='center';ctx.fillText(w.form==='xuanpin'?'玄':'穗',0,-size*.62);
+  ctx.restore();return;
+ }
  const attacking=state.time<w.castUntil,row=attacking?1:0;
  const frame=attacking?Math.min(3,Math.floor((1-(w.castUntil-state.time)/(w.form==='xuanpin'?.9:.62))*4)):Math.floor(state.time*def.fps)%2;
  const facing=player.facing||1,anchor=ws(player.x+facing*-58,player.y-34),z=viewZoom(),size=def.drawSize*z,bob=Math.sin(state.time*3.1)*2.5*z;
@@ -1420,7 +1445,17 @@ function drawLiSuiCompanion(){
 function drawEnemySprite(e){
  if(e.id==='eliteBlackTaisui'||e.id==='eliteRenxiao')return drawBlackTaisuiElite(e);
  // Boss 占位图像绘制
- if(e.id==='bossSanhua'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=160*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.88;ctx.translate(p.x,p.y);const grad=ctx.createRadialGradient(0,0,sz*.1,0,0,sz*.55);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(.7,'rgba(10,8,6,.5)');grad.addColorStop(1,'rgba(15,12,8,.85)');ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,sz*.55,0,Math.PI*2);ctx.fill();ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.strokeStyle='rgba(200,100,50,.7)';ctx.lineWidth=5*z;ctx.beginPath();ctx.arc(0,0,sz*.52,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#d06030';ctx.font=`bold ${Math.max(12,20*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.55);ctx.restore();return sz}}else if(e.id==='eliteXishen'){
+ if(e.id==='bossSanhua'){const img=BOSS_SPRITES.danyangzi.image;const p=ws(e.x,e.y),z=viewZoom(),sz=160*z;if(img.complete&&img.naturalWidth){ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.88;ctx.translate(p.x,p.y);const grad=ctx.createRadialGradient(0,0,sz*.1,0,0,sz*.55);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(.7,'rgba(10,8,6,.5)');grad.addColorStop(1,'rgba(15,12,8,.85)');ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,sz*.55,0,Math.PI*2);ctx.fill();ctx.drawImage(img,-sz/2,-sz/2,sz,sz);ctx.strokeStyle='rgba(200,100,50,.7)';ctx.lineWidth=5*z;ctx.beginPath();ctx.arc(0,0,sz*.52,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#d06030';ctx.font=`bold ${Math.max(12,20*z)}px serif`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,-sz*.55);ctx.restore();return sz}else{
+  // Canvas 兜底（素材未入库时）：红衣道士剪影 + 额上三花标记，保留图片优先路径
+  ctx.save();ctx.globalAlpha=.88;ctx.translate(p.x,p.y);const bob=Math.sin(state.time*2+e.x*.01)*6*z;
+  ctx.fillStyle='rgba(15,12,8,.55)';ctx.beginPath();ctx.arc(0,0,sz*.52,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#a03028';ctx.strokeStyle='#1a1412';ctx.lineWidth=2*z;ctx.beginPath();ctx.moveTo(0,bob-sz*.46);ctx.lineTo(sz*.2,bob-sz*.3);ctx.lineTo(sz*.34,bob+sz*.34);ctx.lineTo(0,bob+sz*.42);ctx.lineTo(-sz*.34,bob+sz*.34);ctx.lineTo(-sz*.2,bob-sz*.3);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#141210';ctx.beginPath();ctx.arc(0,bob-sz*.42,sz*.07,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#d8c36a';ctx.lineWidth=1.4*z;ctx.beginPath();ctx.moveTo(-sz*.06,bob-sz*.5);ctx.lineTo(sz*.06,bob-sz*.44);ctx.stroke();
+  ctx.fillStyle='#d8a878';ctx.strokeStyle='#1a1412';ctx.lineWidth=1*z;ctx.beginPath();ctx.arc(0,bob-sz*.28,sz*.11,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#d06030';const trio=sz*.045;[[-trio,bob-sz*.36],[0,bob-sz*.4],[trio,bob-sz*.36]].forEach(([xx,yy])=>{ctx.beginPath();ctx.arc(xx,yy,trio*.28,0,Math.PI*2);ctx.fill()});
+  ctx.fillStyle='#d06030';ctx.font=`bold ${Math.max(12,18*z)}px Microsoft YaHei`;ctx.textAlign='center';ctx.fillText('三花聚顶',0,bob-sz*.6);
+  ctx.restore();return sz}}else if(e.id==='eliteXishen'){
   // 漆红/古铜/黑 对称庙偶：可见彩绘面孔，暗描边防白边，橙色胸核，攻击青绿
   const p=ws(e.x,e.y),z=viewZoom(),sz=96*z;ctx.save();ctx.globalAlpha=.94;ctx.translate(p.x,p.y);const bob=Math.sin(state.time*2.2+e.x*.01)*5*z;
   // 主体（对称庙偶：漆红 + 古铜饰边 + 黑底，1px 暗描边）
@@ -1471,9 +1506,11 @@ function drawYouLaoYe(y){
  // 金色辉光 + 金色拖尾
  ctx.shadowColor='rgba(255,200,90,.9)';ctx.shadowBlur=10*z;
  for(let strand=0;strand<4;strand++){
+  const dir=strand%2?1:-1,len=52,segs=13;
   ctx.strokeStyle=strand===0?'rgba(255,214,120,.95)':'rgba(230,170,60,.65)';ctx.lineWidth=(strand===0?2.2:1.1)*z;ctx.beginPath();
-  for(let i=0;i<=6;i++){
-   const x=(i-3)*4*z,yOff=(Math.sin(y.phase*2.7+i*1.9+strand*2.2)*5+(strand-2)*1.8)*z;
+  const sway=Math.sin(state.time*1.8+strand*1.3)*3.5*z;
+  for(let i=0;i<=segs;i++){
+   const t=i/segs,x=dir*t*len*z,yOff=(Math.sin(i*.62+y.phase*2.7+strand*1.9)*4.5+sway*t)*z;
    if(i===0)ctx.moveTo(x,yOff);else ctx.lineTo(x,yOff);
   }
   ctx.stroke();
@@ -1483,8 +1520,11 @@ function drawYouLaoYe(y){
  ctx.restore();
 }
 
+function activeThreats(){
+ return state.enemies.filter(e=>!e.dead&&(e.elite||e.boss)).slice(0,3);
+}
 function drawThreatBars(){
- const threats=state.enemies.filter(e=>!e.dead&&(e.elite||e.boss)).slice(0,3);
+ const threats=activeThreats();
  if(!threats.length)return;
  const width=Math.min(innerWidth*(innerWidth<620?.78:.56),620),x=(innerWidth-width)/2;
  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
@@ -1576,23 +1616,6 @@ function draw(){
  ctx.restore();
  for(const ft of state.texts){const p=ws(ft.x,ft.y);ctx.save();ctx.globalAlpha=clamp(ft.life/.6,0,1);ctx.fillStyle=ft.color;ctx.font='bold 12px Microsoft YaHei';ctx.textAlign='center';ctx.fillText(ft.text,p.x,p.y);ctx.restore()}
  drawThreatBars();
- // Boss 奖励揭示动画：候选武器符号轮转
- if(state.revealing&&state.rewardState==='revealing'){
-  const cx=innerWidth/2,cy=innerHeight/2,z=viewZoom(),prog=Math.min(1,state.revealTimer/.7);
-  ctx.save();ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(0,0,innerWidth,innerHeight);
-  ctx.fillStyle='#ffe3b0';ctx.font='bold 20px Microsoft YaHei';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Boss 奖励',cx,cy-innerHeight*.24);
-  const names={coin:'铜钱',you:'游老爷',suisui:'太岁',fire:'火衣',blood:'大千录',general:'献目'};
-  const picks=state.rewardPick;
-  for(let i=0;i<picks.length;i++){
-   const k=picks[i],slot=i%3,clk=rewardRevealClock(state.revealTimer,i),ang=clk.ang,r=innerHeight*.2;
-   const px=cx+Math.cos(ang)*r*.5,py=cy+Math.sin(ang)*r*.5+((i%3)-1)*innerHeight*.14;
-   const pulse=clk.pulse;
-   ctx.globalAlpha=.5+.5*prog;ctx.fillStyle=i%2?'#5a8a7a':'#8e1f1f';ctx.strokeStyle='#e8e2d4';ctx.lineWidth=2;
-   ctx.beginPath();ctx.arc(px,py,20*z*pulse,0,Math.PI*2);ctx.fill();ctx.stroke();
-   ctx.fillStyle='#fff';ctx.font='bold 14px Microsoft YaHei';ctx.fillText(names[k]||k,px,py);
-  }
-  ctx.restore();
- }
  // 低血量红色暗角警告
  if(player.hp/player.maxHp<.3&&state.started){
   const vignetteAlpha=.2*(1-player.hp/player.maxHp/.3);
@@ -1650,13 +1673,15 @@ function drawEffect(ef){
  }
  if(ef.type==='tentacle'){
   ctx.globalAlpha=clamp(ef.life/ef.maxLife,0,1);ctx.translate(p.x,p.y);ctx.rotate(ef.angle);ctx.lineCap='round';
-  const bend=Math.sin((ef.angle||0)*3+state.time*10)*ef.width*.72;
-  ctx.strokeStyle=ef.liSui?'rgba(80,70,65,.6)':'rgba(60,50,45,.45)';ctx.lineWidth=ef.width+9;ctx.beginPath();ctx.moveTo(5,0);ctx.bezierCurveTo(ef.r*.28,-ef.width*.8,ef.r*.6,bend,ef.r,0);ctx.stroke();
-  ctx.strokeStyle=ef.color;ctx.lineWidth=ef.width;ctx.beginPath();ctx.moveTo(5,0);ctx.bezierCurveTo(ef.r*.28,-ef.width*.8,ef.r*.6,bend,ef.r,0);ctx.stroke();
-  ctx.strokeStyle=ef.liSui?'rgba(167,57,56,.82)':'rgba(92,54,48,.72)';ctx.lineWidth=Math.max(2,ef.width*.18);ctx.beginPath();ctx.moveTo(8,-2);ctx.bezierCurveTo(ef.r*.28,-ef.width*.55,ef.r*.62,bend*.8,ef.r-4,-1);ctx.stroke();
-  ctx.strokeStyle='rgba(8,7,7,.76)';ctx.lineWidth=Math.max(3,ef.width*.38);ctx.beginPath();ctx.moveTo(14,ef.width*.36);ctx.bezierCurveTo(ef.r*.32,ef.width*1.1,ef.r*.66,-bend*.55,ef.r*.88,ef.width*.24);ctx.stroke();
+  // 生长 + 挥扫：前 30% 生命周期从玩家处伸长，期间横向扫动，避免突兀满长出现
+  const prog=1-ef.life/ef.maxLife,grow=Math.min(1,prog/.3),reach=ef.r*grow,sweep=Math.sin(prog*Math.PI*1.4)*ef.width*.6*grow;
+  const bend=Math.sin((ef.angle||0)*3+state.time*10)*ef.width*.72+sweep;
+  ctx.strokeStyle=ef.liSui?'rgba(80,70,65,.6)':'rgba(60,50,45,.45)';ctx.lineWidth=ef.width+9;ctx.beginPath();ctx.moveTo(5,0);ctx.bezierCurveTo(reach*.28,-ef.width*.8,reach*.6,bend,reach,0);ctx.stroke();
+  ctx.strokeStyle=ef.color;ctx.lineWidth=ef.width;ctx.beginPath();ctx.moveTo(5,0);ctx.bezierCurveTo(reach*.28,-ef.width*.8,reach*.6,bend,reach,0);ctx.stroke();
+  ctx.strokeStyle=ef.liSui?'rgba(167,57,56,.82)':'rgba(92,54,48,.72)';ctx.lineWidth=Math.max(2,ef.width*.18);ctx.beginPath();ctx.moveTo(8,-2);ctx.bezierCurveTo(reach*.28,-ef.width*.55,reach*.62,bend*.8,reach-4,-1);ctx.stroke();
+  ctx.strokeStyle='rgba(8,7,7,.76)';ctx.lineWidth=Math.max(3,ef.width*.38);ctx.beginPath();ctx.moveTo(14,ef.width*.36);ctx.bezierCurveTo(reach*.32,ef.width*1.1,reach*.66,-bend*.55,reach*.88,ef.width*.24);ctx.stroke();
   // 湿亮高光
-  if(!ef.liSui){ctx.strokeStyle='rgba(120,70,60,.35)';ctx.lineWidth=Math.max(1.2,ef.width*.08);ctx.beginPath();ctx.moveTo(14,ef.width*.18);ctx.bezierCurveTo(ef.r*.38,ef.width*.4,ef.r*.7,-bend*.3,ef.r*.92,ef.width*.1);ctx.stroke()}
+  if(!ef.liSui){ctx.strokeStyle='rgba(120,70,60,.35)';ctx.lineWidth=Math.max(1.2,ef.width*.08);ctx.beginPath();ctx.moveTo(14,ef.width*.18);ctx.bezierCurveTo(reach*.38,ef.width*.4,reach*.7,-bend*.3,reach*.92,ef.width*.1);ctx.stroke()}
  }
  if(ef.type==='daqian'){
   const progress=1-ef.life/ef.maxLife;ctx.globalAlpha=clamp(ef.life/ef.maxLife,.06,.7);
@@ -1762,7 +1787,7 @@ function updateUI(){
  const nextLine=next?`${formatClock(next.at)} ${next.label}`:'击败丹阳子';
  const sacrificePerMinute=player.hp*CONFIG.sacrifice.daqianluDrainPerSecond*60;
  const sacrificeLine=player.weapons.blood.lv>0?`<br>献祭 ${sacrificePerMinute.toFixed(1)}/分 · 本局 ${player.sacrifice.total.toFixed(2)}<br><span style="color:#ff6b60">每秒祭损 ${(player.hp*CONFIG.sacrifice.daqianluDrainPerSecond).toFixed(2)}</span>`:'';
- const ult=player;const ultLine=player.weapons.ultimate&&player.weapons.ultimate.lv>0?(player.ultimateBoost>0?`<br><span style="color:#ff6b30">全伤+75% ${player.ultimateBoost.toFixed(1)}s</span>`:`<br><span style="color:#888">祭期${player.weapons.ultimate.lv>=3?30:player.weapons.ultimate.lv>=2?45:60}s ${player.ultimateTimer.toFixed(0)}s</span>`):'';
+ const ultLine=player.weapons.ultimate&&player.weapons.ultimate.lv>0?(player.ultimateBoost>0?`<br><span style="color:#ff6b30">全伤+75% ${player.ultimateBoost.toFixed(1)}s</span>`:(player.weapons.ultimate.lv<3?`<br><span style="color:#888">置闰五行 Lv${player.weapons.ultimate.lv}/3 未解锁</span>`:(player.ultimateTimer>0?`<br><span style="color:#888">置闰五行 冷却 ${player.ultimateTimer.toFixed(0)}s</span>`:`<br><span style="color:#ffd700">置闰五行 就绪</span>`))):'';
  ui.innerHTML=`血 ${Math.ceil(player.hp)}/${player.maxHp}<br>回 ${(player.regenPercent*100).toFixed(2)}%/s${sacrificeLine}${ultLine}<br>Lv ${player.level}<br>散炁 ${Math.floor(player.exp)}/${player.needExp} · 先天一炁<br>${mm}:${ss}<br>杀 ${state.kill}<br>阶段 ${phase.label}<br>压力 ×${phase.spawnMult.toFixed(2)}<br>下一节点 ${nextLine}`;
  const ws=Object.values(player.weapons).filter(w=>w.lv>0).map(w=>`${w.evolved?'★':''}${w.name} Lv${w.lv}`);
  const ps=Object.values(player.passives).filter(p=>p.lv>0).map(p=>`${p.name} Lv${p.lv}`);
@@ -1777,6 +1802,20 @@ function updateDebugHud(force=false){
  debugHud.textContent=`FPS ${perf.fps}\n阶段 ${phase.label} ×${phase.spawnMult.toFixed(2)} 批${phase.batch} 软限${phase.softCap}\n事件 ${state.nextFlowEvent}/${FLOW_EVENTS.length}\n位置 ${Math.round(player.x)}, ${Math.round(player.y)}\n敌 ${state.enemies.length}/${MAX_ENEMIES}\n我弹 ${state.bullets.length}/${LIMITS.bullets}\n敌弹 ${state.enemyBullets.length}/${LIMITS.enemyBullets}\n特效 ${state.effects.length}/${LIMITS.effects}\n掉落 ${state.gems.length}/${LIMITS.gems}\n任务 ${state.tasks.length}`;
 }
 function togglePause(){if(!state.started||state.leveling||state.gameOver)return;state.paused=!state.paused;state.manualPause=state.paused;pauseBtn.textContent=state.paused?'继续':'暂停';showMessage(state.paused?'暂停':'继续')}
+function triggerUltimate(){
+ if(!state.started||state.gameOver||state.paused||state.leveling)return;
+ const w=player.weapons.ultimate;
+ if(!w||w.lv<3){showMessage('置闰五行需 Lv3 方可施展');return;}
+ if(player.ultimateBoost>0){showMessage('置闰五行强化中');return;}
+ if(player.ultimateTimer>0){showMessage(`置闰五行祭期冷却 ${Math.ceil(player.ultimateTimer)}s`);return;}
+ const cost=player.hp*CONFIG.sacrifice.ultimateRatio;
+ if(player.hp>CONFIG.sacrifice.minHp)COMBAT.takePlayerDamage(player,cost,DAMAGE.SACRIFICE,{minHp:CONFIG.sacrifice.minHp});
+ player.ultimateBoost=8;
+ player.ultimateTimer=30;
+ state.effects.push({type:'ring',x:player.x,y:player.y,r:44,life:.5,maxLife:.5,color:'rgba(100,15,15,.55)'});
+ showMessage(player.hp<=1?'锁一血·全伤强化+75%':'献祭·全伤强化+75%');
+}
+ultBtn.onclick=triggerUltimate;
 // 结算：死亡/通关统一入口。幂等：重复调用不重复改状态。
 function endGame(win,text){
  if(state.gameOver)return;
@@ -1799,6 +1838,7 @@ function autoPause(reason){
  keys.clear();resetStick();
  if(!state.started||state.leveling||state.gameOver||state.paused)return;
  state.paused=true;
+ state.manualPause=true;
  pauseBtn.textContent='继续';
  showMessage(`${reason}：已自动暂停`);
 }
@@ -1836,11 +1876,16 @@ Object.defineProperty(window,'__DAOGUI_V105__',{value:Object.freeze({
  flow:Object.freeze({phases:FLOW_PHASES.map(p=>({...p,pool:[...p.pool]})),events:FLOW_EVENTS.map(e=>({...e}))})
 })});
 let last=performance.now();
+const SIM_STEP=1/60,MAX_FRAME=.25;
+let accumulator=0;
 function loop(now=performance.now()){
- const rawDt=Math.max(0,(now-last)/1000),dt=Math.min(rawDt,.033);last=now;
+ const rawDt=Math.max(0,(now-last)/1000);last=now;
  perf.frames++;perf.elapsed+=rawDt;perf.hudElapsed+=rawDt;
  if(perf.elapsed>=.5){perf.fps=Math.round(perf.frames/perf.elapsed);perf.frames=0;perf.elapsed=0}
- update(dt);updateDebugHud();draw();
+ const frameDt=Math.min(rawDt,MAX_FRAME);accumulator+=frameDt; // 丢弃后台长间隔，防无限追赶
+ let steps=0;while(accumulator>=SIM_STEP&&steps<15){update(SIM_STEP);accumulator-=SIM_STEP;steps++}
+ if(accumulator>=SIM_STEP)accumulator=0; // 达步数上限则丢弃积压，防止死亡螺旋
+ updateDebugHud();draw();
 }
 startPanel.style.display='flex';updateUI();requestAnimationFrame(loop);
 })();

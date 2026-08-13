@@ -51,14 +51,7 @@
     weaponTrees: {
       coin: { evolveAt: 7, evolvedName: "铜钱悬剑" },
       suisui: { choiceAt: 5, evolvedName: "李岁" },
-      blood: {
-        branchAt: 3,
-        branches: {
-          tooth: { name: "牙祭", evolvedName: "齿雨贯阵" },
-          nail: { name: "甲祭", evolvedName: "十甲血轮" },
-          finger: { name: "指祭", evolvedName: "裂指成林" },
-        },
-      },
+      blood: {},
       fire: { evolveAt: 7, evolvedName: "火袄蜒行" },
       general: { evolveAt: 7, evolvedName: "巴虺一瞥" },
     },
