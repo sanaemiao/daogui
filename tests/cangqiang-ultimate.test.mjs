@@ -46,14 +46,14 @@ async function loadGame() {
   let script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
   script = script.replace(
     /requestAnimationFrame\(loop\);\s*\}\)\(\);\s*$/,
-    `requestAnimationFrame(loop);window.__T__={state,player,triggerCangQiang,triggerUltimate,update,startNewRun,randomNormalOptions,cdMul,atkMul,keys};})();`,
+    `requestAnimationFrame(loop);window.__T__={state,player,triggerCangQiang,triggerUltimate,update,startNewRun,randomNormalOptions,chooseOption,cdMul,atkMul,keys};})();`,
   );
-  const { sandbox } = buildSandbox();
+  const { sandbox, elements } = buildSandbox();
   const ctx = vm.createContext(sandbox);
   vm.runInContext(cfg, ctx);
   vm.runInContext(core, ctx);
   vm.runInContext(script, ctx);
-  return { T: sandbox.window.__T__ };
+  return { T: sandbox.window.__T__, elements };
 }
 function isolate(T) {
   T.player.needExp = 1e9;
@@ -160,4 +160,20 @@ test("苍蜣登阶：3级数值成长（Lv3 伤害 > Lv1）", async () => {
   const b = mkEnemy({ hp: 5000, maxHp: 5000 }); T.state.enemies.push(b); T.triggerCangQiang();
   const dmg3 = 5000 - b.hp;
   assert.ok(dmg3 > dmg1, `Lv3 伤害(${dmg3.toFixed(1)})应大于 Lv1(${dmg1.toFixed(1)})`);
+});
+
+test("苍蜣登阶按钮：Lv7 未学隐藏，Lv1 后显示", async () => {
+  const { T, elements } = await loadGame();
+  T.startNewRun();
+  // 场景1：大千录 Lv7 但未学苍蜣登阶（cangqiang.lv=0）→ 按钮隐藏
+  T.player.weapons.blood.lv = 7;
+  T.player.cangqiang.lv = 0;
+  assert.equal(elements.dengjieBtn.style.display, "none", "blood Lv7 未学苍蜣登阶时按钮隐藏");
+  // 场景2：选择苍蜣登阶（lv→1）→ 按钮显示
+  T.chooseOption({ type: "cangqiang", title: "获得：苍蜣登阶" });
+  assert.equal(T.player.cangqiang.lv, 1, "获得后 cangqiang.lv=1");
+  assert.equal(elements.dengjieBtn.style.display, "block", "获得后按钮显示");
+  // 场景3：重开 → lv 重置，按钮隐藏
+  T.startNewRun();
+  assert.equal(elements.dengjieBtn.style.display, "none", "重开后按钮隐藏");
 });

@@ -994,7 +994,7 @@ function finishLevelChoice(){
 
 function chooseOption(o){
  if(o.type==='weapon'){const w=player.weapons[o.key];w.lv++;updateWeaponName(o.key);showMessage(o.title)}
- if(o.type==='cangqiang'){player.cangqiang.lv++;showMessage(o.title)}
+ if(o.type==='cangqiang'){player.cangqiang.lv++;dengjieBtn.style.display='block';showMessage(o.title)}
  if(o.type==='passive'){applyPassive(o.key);showMessage(o.title)}
  if(o.type==='evolve'){
   const w=player.weapons[o.key];
@@ -1893,7 +1893,7 @@ function startNewRun(){
  pauseBtn.style.display='block';pauseBtn.textContent='暂停';
  if(!window.matchMedia('(pointer:fine) and (min-width:900px)').matches){if(player.weapons.ultimate&&player.weapons.ultimate.lv>0)ultBtn.style.display='block'}
  if(player.weapons.ultimate&&player.weapons.ultimate.lv>0)ultBtn.style.display='block';
- if(player.cangqiang&&player.cangqiang.lv>0)dengjieBtn.style.display='block';
+ dengjieBtn.style.display=player.cangqiang&&player.cangqiang.lv>0?'block':'none';
  last=performance.now();updateUI();showMessage('荒村起雾。');
 }
 document.getElementById('startBtn').addEventListener('click',startNewRun);
