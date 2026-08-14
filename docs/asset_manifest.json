@@ -1,0 +1,304 @@
+{
+  "manifestVersion": "1.0",
+  "generatedAt": "2026-08-13",
+  "project": "daogui-port-main",
+  "commit": "0ea57f7",
+  "scannedFiles": 27,
+  "referencedMissing": 1,
+  "summary": {
+    "characters": 3,
+    "enemies": 4,
+    "bosses": 2,
+    "skills": 0,
+    "projectiles": 0,
+    "effects": 0,
+    "maps": 1,
+    "ui": 0,
+    "audio": 0,
+    "fonts": 0,
+    "unused": 18,
+    "unknown": 0
+  },
+  "assets": [
+    {
+      "path": "assets/pixel-prototypes/bandit-v1-128.png",
+      "type": "enemy",
+      "width": 128,
+      "height": 128,
+      "transparency": "单帧敌人精灵（1帧）",
+      "used": true,
+      "usedBy": ["CONFIG.sprites.tufei.src（土匪贴图）"],
+      "notes": "普通敌人土匪的基础贴图，1 帧静态，drawSize=56"
+    },
+    {
+      "path": "assets/enemy-rebuild-v1/yaoren-v1-sheet.png",
+      "type": "enemy",
+      "width": 512,
+      "height": 128,
+      "transparency": "精灵表，4 帧水平排列（512/4=128px 每帧），带透明通道",
+      "used": true,
+      "usedBy": ["CONFIG.sprites.yaoren.src（药人贴图）"],
+      "notes": "药人动画表，frames=4，fps=6，drawSize=60"
+    },
+    {
+      "path": "assets/enemy-rebuild-v1/splitface-xiesui-v1-sheet.png",
+      "type": "enemy",
+      "width": 512,
+      "height": 128,
+      "transparency": "精灵表，4 帧水平排列，带透明通道",
+      "used": true,
+      "usedBy": ["CONFIG.sprites.xiesui.src（裂面邪祟贴图）"],
+      "notes": "裂面邪祟动画表，frames=4，fps=5，drawSize=68"
+    },
+    {
+      "path": "assets/enemy-rebuild-v1/wandering-soul-v1-sheet.png",
+      "type": "enemy",
+      "width": 512,
+      "height": 128,
+      "transparency": "精灵表，4 帧水平排列，带透明通道",
+      "used": true,
+      "usedBy": ["CONFIG.sprites.wumian.src（无面游魂贴图）"],
+      "notes": "无面游魂动画表，frames=4，fps=6，drawSize=62"
+    },
+    {
+      "path": "assets/legacy-reference-v1/丹阳子三花聚顶.png",
+      "type": "boss",
+      "width": 1254,
+      "height": 1254,
+      "transparency": "单张参考图（非精灵表），透明背景",
+      "used": true,
+      "usedBy": ["startPanel bossRefs 概念图 img（index.html:76）", "BOSS_SPRITES.danyangzi.src（index.html:123，运行时绘制 index.html:1434）"],
+      "notes": "双引用：开始面板 Boss 概念图 + BOSS_SPRITES.danyangzi 运行时挂载用于三花 Boss 绘制（frames 单张，绘制时按 drawSize=160 缩放）"
+    },
+    {
+      "path": "assets/legacy-reference-v1/腊月十八.png",
+      "type": "boss",
+      "width": 1254,
+      "height": 1254,
+      "transparency": "单张参考图（非精灵表），透明背景",
+      "used": true,
+      "usedBy": ["startPanel bossRefs 概念图 img（index.html:80）"],
+      "notes": "仅作开始面板 Boss 概念图展示（bossRefs details 内），BOSS_SPRITES 无 layue 条目，不参与运行时绘制"
+    },
+    {
+      "path": "assets/player-lihuowang-v8/lihuowang-v8-sheet.png",
+      "type": "character",
+      "width": 512,
+      "height": 128,
+      "transparency": "精灵表，4 帧水平排列（512/4=128px 每帧），带透明通道",
+      "used": true,
+      "usedBy": ["PLAYER_SPRITE.src（玩家立火旺）", "BOSS_SPRITES.fakeHuowang.src（伪装/分身）"],
+      "notes": "玩家主精灵表，frames=4，fps=8，drawSize=82"
+    },
+    {
+      "path": "assets/player-lisui-v2/lisui-girl-v2-spritesheet.png",
+      "type": "character",
+      "width": 512,
+      "height": 256,
+      "transparency": "精灵表（多行），带透明通道",
+      "used": true,
+      "usedBy": ["LISUI_SPRITES.lisui.src（黑太岁进化李岁）"],
+      "notes": "李岁精灵表，fps=7，drawSize=72"
+    },
+    {
+      "path": "assets/player-lisui-v2/xuanpin-v2-spritesheet.png",
+      "type": "character",
+      "width": 512,
+      "height": 256,
+      "transparency": "精灵表（多行），带透明通道",
+      "used": true,
+      "usedBy": ["LISUI_SPRITES.xuanpin.src（玄品形态）"],
+      "notes": "玄品精灵表，fps=6，drawSize=92"
+    },
+    {
+      "path": "assets/pixel-prototypes/village-ground-v1-512.png",
+      "type": "map",
+      "width": null,
+      "height": null,
+      "transparency": "文件缺失（引用缺失）",
+      "used": true,
+      "usedBy": ["CONFIG.map.texture（地图地面贴图）"],
+      "notes": "被 stage1-config.js 引用但 assets 目录中不存在此文件（assets 下仅有 bandit-v1-128.png）。运行时 MAP_TEXTURE 404，地图地面不显示。迁移 P0：需补图或改纯色/程序化地面"
+    },
+    {
+      "path": "assets/player-lisui-v2/lisui-girl-v1-spritesheet.png",
+      "type": "character",
+      "width": 512,
+      "height": 256,
+      "transparency": "精灵表，带透明通道",
+      "used": false,
+      "usedBy": null,
+      "notes": "李岁 v1 旧版精灵表，未被代码引用（当前用 v2）"
+    },
+    {
+      "path": "assets/player-lisui-v2/lisui-girl-v1-sheet.png",
+      "type": "character",
+      "width": 1536,
+      "height": 1024,
+      "transparency": "大图源（sheet），带透明通道",
+      "used": false,
+      "usedBy": null,
+      "notes": "v1 未引用大图源"
+    },
+    {
+      "path": "assets/player-lisui-v2/lisui-girl-v1-sheet-chroma.png",
+      "type": "character",
+      "width": 1536,
+      "height": 1024,
+      "transparency": "大图源（chroma 键控版）",
+      "used": false,
+      "usedBy": null,
+      "notes": "v1 未引用色键版"
+    },
+    {
+      "path": "assets/player-lisui-v2/lisui-girl-v1-preview.gif",
+      "type": "character",
+      "width": 224,
+      "height": 224,
+      "transparency": "预览动图",
+      "used": false,
+      "usedBy": null,
+      "notes": "v1 未引用预览图"
+    },
+    {
+      "path": "assets/player-lisui-v2/lisui-girl-v1-manifest.json",
+      "type": "character",
+      "width": null,
+      "height": null,
+      "transparency": "元数据 JSON",
+      "used": false,
+      "usedBy": null,
+      "notes": "v1 未引用清单（含帧信息，迁移时可复用）"
+    },
+    {
+      "path": "assets/player-lisui-v2/lisui-girl-v2-sheet.png",
+      "type": "character",
+      "width": 1536,
+      "height": 1024,
+      "transparency": "大图源（sheet），带透明通道",
+      "used": false,
+      "usedBy": null,
+      "notes": "v2 大图源未被代码直接引用（运行时用 spritesheet）"
+    },
+    {
+      "path": "assets/player-lisui-v2/lisui-girl-v2-sheet-chroma.png",
+      "type": "character",
+      "width": 1536,
+      "height": 1024,
+      "transparency": "大图源（chroma 键控版）",
+      "used": false,
+      "usedBy": null,
+      "notes": "v2 色键版未引用"
+    },
+    {
+      "path": "assets/player-lisui-v2/lisui-girl-v2-preview.gif",
+      "type": "character",
+      "width": 224,
+      "height": 224,
+      "transparency": "预览动图",
+      "used": false,
+      "usedBy": null,
+      "notes": "v2 预览图未引用"
+    },
+    {
+      "path": "assets/player-lisui-v2/lisui-girl-v2-manifest.json",
+      "type": "character",
+      "width": null,
+      "height": null,
+      "transparency": "元数据 JSON",
+      "used": false,
+      "usedBy": null,
+      "notes": "v2 清单未引用（含帧信息，迁移时可复用）"
+    },
+    {
+      "path": "assets/player-lisui-v2/xuanpin-v1-spritesheet.png",
+      "type": "character",
+      "width": 512,
+      "height": 256,
+      "transparency": "精灵表，带透明通道",
+      "used": false,
+      "usedBy": null,
+      "notes": "玄品 v1 旧版精灵表未引用（当前用 v2）"
+    },
+    {
+      "path": "assets/player-lisui-v2/xuanpin-v1-sheet.png",
+      "type": "character",
+      "width": 1536,
+      "height": 1024,
+      "transparency": "大图源（sheet），带透明通道",
+      "used": false,
+      "usedBy": null,
+      "notes": "v1 未引用大图源"
+    },
+    {
+      "path": "assets/player-lisui-v2/xuanpin-v1-sheet-chroma.png",
+      "type": "character",
+      "width": 1536,
+      "height": 1024,
+      "transparency": "大图源（chroma 键控版）",
+      "used": false,
+      "usedBy": null,
+      "notes": "v1 未引用色键版"
+    },
+    {
+      "path": "assets/player-lisui-v2/xuanpin-v1-preview.gif",
+      "type": "character",
+      "width": 224,
+      "height": 224,
+      "transparency": "预览动图",
+      "used": false,
+      "usedBy": null,
+      "notes": "v1 未引用预览图"
+    },
+    {
+      "path": "assets/player-lisui-v2/xuanpin-v1-manifest.json",
+      "type": "character",
+      "width": null,
+      "height": null,
+      "transparency": "元数据 JSON",
+      "used": false,
+      "usedBy": null,
+      "notes": "v1 未引用清单（含帧信息，迁移时可复用）"
+    },
+    {
+      "path": "assets/player-lisui-v2/xuanpin-v2-sheet.png",
+      "type": "character",
+      "width": 1536,
+      "height": 1024,
+      "transparency": "大图源（sheet），带透明通道",
+      "used": false,
+      "usedBy": null,
+      "notes": "v2 大图源未被代码直接引用（运行时用 spritesheet）"
+    },
+    {
+      "path": "assets/player-lisui-v2/xuanpin-v2-sheet-chroma.png",
+      "type": "character",
+      "width": 1536,
+      "height": 1024,
+      "transparency": "大图源（chroma 键控版）",
+      "used": false,
+      "usedBy": null,
+      "notes": "v2 色键版未引用"
+    },
+    {
+      "path": "assets/player-lisui-v2/xuanpin-v2-preview.gif",
+      "type": "character",
+      "width": 224,
+      "height": 224,
+      "transparency": "预览动图",
+      "used": false,
+      "usedBy": null,
+      "notes": "v2 预览图未引用"
+    },
+    {
+      "path": "assets/player-lisui-v2/xuanpin-v2-manifest.json",
+      "type": "character",
+      "width": null,
+      "height": null,
+      "transparency": "元数据 JSON",
+      "used": false,
+      "usedBy": null,
+      "notes": "v2 清单未引用（含帧信息，迁移时可复用）"
+    }
+  ]
+}
