@@ -73,7 +73,7 @@ test("黑太岁触手行为契约不回归：次数/伤害/长度/宽度/命中�
   assert.match(html, /lashes=1\+\(w\.lv>=3\?1:0\)\+\(w\.lv>=4\?1:0\)\+\(w\.lv>=6\?1:0\)/);
   assert.match(html, /\(34\+\(w\.lv>=2\?12:0\)\+\(w\.lv>=4\?10:0\)\+\(w\.lv>=5\?18:0\)\+\(w\.lv>=6\?12:0\)\)\*atkMul\(\)/);
   assert.match(html, /forward>0&&forward<length&&side<width\+e\.r/);
-  assert.match(html, /type:'tentacle',x:player\.x,y:player\.y,angle,r:length,width,life:[^,]+\.42:[^,]+,maxLife:/);
+  assert.match(html, /type:'tentacle',x:player\.x,y:player\.y,angle,r:length,width,life:\.6,maxLife:\.6/);
 });
 
 test("游老爷绘制契约：细长波浪长条 + 保留金色系配色", async () => {

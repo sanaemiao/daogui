@@ -765,13 +765,18 @@ function useSuisui(dt){
  for(let i=0;i<lashes;i++)scheduleGameTask(i*90,()=>{
   if(state.gameOver||state.paused||state.leveling)return;
   const angle=baseAngle+(i-(lashes-1)/2)*(w.lv>=4?.52:.38);
-  for(const e of [...state.enemies]){
-   const ex=e.x-player.x,ey=e.y-player.y;
-   const forward=ex*Math.cos(angle)+ey*Math.sin(angle);
-   const side=Math.abs(-ex*Math.sin(angle)+ey*Math.cos(angle));
-   if(forward>0&&forward<length&&side<width+e.r){damageEnemy(e,dmg);e.x+=Math.cos(angle)*16;e.y+=Math.sin(angle)*16}
-  }
-  state.effects.push({type:'tentacle',x:player.x,y:player.y,angle,r:length,width,life:w.lv>=4?.42:.28,maxLife:w.lv>=4?.42:.28,color:w.lv>=6?'rgba(40,35,35,.96)':'rgba(13,12,12,.94)',liSui:w.lv>=6,text:i===0?w.name:''});
+  // 起手伸出 + 横向挥扫（三段视觉，life≈0.6s），不立即结算伤害
+  state.effects.push({type:'tentacle',x:player.x,y:player.y,angle,r:length,width,life:.6,maxLife:.6,color:w.lv>=6?'rgba(40,35,35,.96)':'rgba(13,12,12,.94)',liSui:w.lv>=6,text:i===0?w.name:''});
+  // 挥扫接触点才结算伤害（起手伸出≈0.18s + 挥扫前半≈0.15s）
+  scheduleGameTask(330,()=>{
+   if(state.gameOver||state.paused||state.leveling)return;
+   for(const e of [...state.enemies]){
+    const ex=e.x-player.x,ey=e.y-player.y;
+    const forward=ex*Math.cos(angle)+ey*Math.sin(angle);
+    const side=Math.abs(-ex*Math.sin(angle)+ey*Math.cos(angle));
+    if(forward>0&&forward<length&&side<width+e.r){damageEnemy(e,dmg);e.x+=Math.cos(angle)*16;e.y+=Math.sin(angle)*16}
+   }
+  });
  });
  w.cd=(2.15*(w.lv>=4?.9:1)*(w.lv>=7?.86:1))*cdMul();
 }
@@ -1673,8 +1678,8 @@ function drawEffect(ef){
  }
  if(ef.type==='tentacle'){
   ctx.globalAlpha=clamp(ef.life/ef.maxLife,0,1);ctx.translate(p.x,p.y);ctx.rotate(ef.angle);ctx.lineCap='round';
-  // 生长 + 挥扫：前 30% 生命周期从玩家处伸长，期间横向扫动，避免突兀满长出现
-  const prog=1-ef.life/ef.maxLife,grow=Math.min(1,prog/.3),reach=ef.r*grow,sweep=Math.sin(prog*Math.PI*1.4)*ef.width*.6*grow;
+  // 三段：起手伸出(prog 0→.3 伸长) → 横向挥扫(prog .3→.8 横摆) → 淡出
+  const prog=1-ef.life/ef.maxLife,grow=Math.min(1,prog/.3),reach=ef.r*grow,sweepPhase=clamp((prog-.3)/.5,0,1),sweep=Math.sin(sweepPhase*Math.PI)*ef.width*.9*grow;
   const bend=Math.sin((ef.angle||0)*3+state.time*10)*ef.width*.72+sweep;
   ctx.strokeStyle=ef.liSui?'rgba(80,70,65,.6)':'rgba(60,50,45,.45)';ctx.lineWidth=ef.width+9;ctx.beginPath();ctx.moveTo(5,0);ctx.bezierCurveTo(reach*.28,-ef.width*.8,reach*.6,bend,reach,0);ctx.stroke();
   ctx.strokeStyle=ef.color;ctx.lineWidth=ef.width;ctx.beginPath();ctx.moveTo(5,0);ctx.bezierCurveTo(reach*.28,-ef.width*.8,reach*.6,bend,reach,0);ctx.stroke();
