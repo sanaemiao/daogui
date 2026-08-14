@@ -862,26 +862,26 @@ function useEyeSacrifice(dt){
  // 献目定形：全方向圆形凝视（Lv1-6 全圆，Lv7 巴虺之眼全局表现）——OPTION A 全圆契约（见 tests/eye-tree.test.mjs）
  const radius=(245+(lv>=3?55:0)+(lv>=6?30:0)+(w.evolved?100:0))*areaMul();
  const damage=(10+(lv>=5?8:0)+(w.evolved?8:0))*atkMul();
- const slow=(lv>=5?1.6:(lv>=3?1.35:1.15));
+ const stun=(lv>=6?2.0:(lv>=5?1.8:(lv>=4?1.6:(lv>=3?1.4:1.2))));
  const pulses=1+(lv>=4?1:0)+(lv>=6?1:0); // Lv4 双波、Lv6 三波
  const gap=lv>=6?.22:(lv>=4?.3:.4);
  for(let p=0;p<pulses;p++){
   const delay=p*gap;
   if(delay>0)scheduleGameTask(delay*1000,()=>{
    if(state.gameOver||state.paused)return;
-   eyeGazePulse(radius,damage,slow,w.evolved);
+   eyeGazePulse(radius,damage,stun,w.evolved);
   });
-  else eyeGazePulse(radius,damage,slow,w.evolved);
+  else eyeGazePulse(radius,damage,stun,w.evolved);
  }
  if(w.evolved)state.effects.push({type:'bahuiEye',x:player.x,y:player.y,r:Math.max(innerWidth,innerHeight),life:1.25,maxLife:1.25});
  w.cd=(w.evolved?18:11.5*(lv>=2?.92:1)*(lv>=5?.88:1))*cdMul();
 }
-function eyeGazePulse(radius,damage,slow,evolved){
+function eyeGazePulse(radius,damage,stun,evolved){
  // 全方向圆形凝视：halfAngle=Math.PI 整圆（无扇形）——OPTION A 全圆契约
  state.effects.push({type:'eyeGaze',x:player.x,y:player.y,angle:0,r:radius,halfAngle:Math.PI,life:.45,maxLife:.45,evolved});
  for(const e of [...state.enemies]){
   const dist=Math.hypot(player.x-e.x,player.y-e.y);
-  if(dist<=radius+e.r){damageEnemy(e,damage);e.slow=Math.max(e.slow,slow)}
+  if(dist<=radius+e.r){damageEnemy(e,damage);e.stun=Math.max(e.stun||0,stun)}
  }
 }
 
@@ -1322,7 +1322,7 @@ function update(dt){
  processGameTasks();
 
  for(const e of [...state.enemies]){
-  updateEnemyBehavior(e,dt);if(!e.crossing)resolveTerrainCollision(e);e.hitCd=Math.max(0,e.hitCd-dt);e.slow=Math.max(0,e.slow-dt);e.flashTimer=Math.max(0,(e.flashTimer||0)-dt);
+  const sx=e.x,sy=e.y;updateEnemyBehavior(e,dt);if(e.stun>0){e.x=sx;e.y=sy;}if(!e.crossing)resolveTerrainCollision(e);e.hitCd=Math.max(0,e.hitCd-dt);e.slow=Math.max(0,e.slow-dt);e.stun=Math.max(0,(e.stun||0)-dt);e.flashTimer=Math.max(0,(e.flashTimer||0)-dt);
   if(e.burn){e.burn.remaining-=dt;e.burn.tick-=dt;if(e.burn.tick<=0){e.burn.tick=e.burn.interval;if(!e.dead)damageEnemy(e,e.burn.dps*e.burn.interval)}if(e.burn.remaining<=0)delete e.burn}
   if(!e.dead&&Math.hypot(player.x-e.x,player.y-e.y)<player.r+e.r&&e.hitCd<=0){const hit=takePlayerHit(e.dmg,DAMAGE.CONTACT);if(!hit.ignored)e.hitCd=.65}
  }
