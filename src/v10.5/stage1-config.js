@@ -25,6 +25,8 @@
       skinBurstRatio: 0.01,
       eyeBurstRatio: 0.01,
       ultimateRatio: 0.12,
+      cangqiangRatio: 0.3,
+      cangqiangBossMul: 0.4,
       maxCombinedDrainPerMinute: 0.12,
       ledgerInterval: 2,
     },

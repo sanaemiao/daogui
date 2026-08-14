@@ -13,6 +13,7 @@ canvas{display:block;width:100vw;height:100vh;background:radial-gradient(circle,
 #message{position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:12;font-size:17px;font-weight:bold;color:#ffe8b5;text-align:center;text-shadow:0 3px 8px #000;pointer-events:none;opacity:0;transition:opacity .25s;width:90vw}
 #pauseBtn{display:none;position:fixed;right:10px;bottom:98px;z-index:15;width:52px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.45);color:#eee;font-size:14px}
 #ultBtn{display:none;position:fixed;left:22px;top:calc(100vh - 240px);z-index:15;width:60px;height:40px;border-radius:10px;border:2px solid rgba(220,180,80,.45);background:rgba(0,0,0,.55);color:#ffd700;font-size:12px;font-weight:bold;pointer-events:auto}
+#dengjieBtn{display:none;position:fixed;left:22px;top:calc(100vh - 296px);z-index:15;width:60px;height:40px;border-radius:10px;border:2px solid rgba(90,160,130,.5);background:rgba(0,0,0,.55);color:#7fe0b0;font-size:12px;font-weight:bold;pointer-events:auto}
 #joystick{position:fixed;left:22px;top:calc(100vh - 128px);z-index:15;width:96px;height:96px;opacity:.28;transition:opacity .12s;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)}
 #stick{position:absolute;left:32px;top:32px;width:32px;height:32px;border-radius:50%;background:rgba(255,220,170,.58);box-shadow:0 0 18px rgba(255,210,150,.3)}
 #controlsHint{display:none;position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:10;padding:7px 12px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(0,0,0,.36);color:#cdbda9;font-size:12px;pointer-events:none;white-space:nowrap}
@@ -53,6 +54,7 @@ canvas{display:block;width:100vw;height:100vh;background:radial-gradient(circle,
 <div id="debugHud"></div>
 <button id="pauseBtn">暂停</button>
 <button id="ultBtn">置闰五行</button>
+<button id="dengjieBtn">登阶</button>
 <div id="joystick"><div id="stick"></div></div>
 
 <div id="startPanel">
@@ -114,7 +116,7 @@ const ui=document.getElementById('ui'),skillsUi=document.getElementById('skills'
 const debugHud=document.getElementById('debugHud');
 const startPanel=document.getElementById('startPanel'),levelPanel=document.getElementById('levelPanel'),levelOptions=document.getElementById('levelOptions');
 const endPanel=document.getElementById('endPanel'),endTitle=document.getElementById('endTitle'),endText=document.getElementById('endText'),restartBtn=document.getElementById('restartBtn');
-const pauseBtn=document.getElementById('pauseBtn'),ultBtn=document.getElementById('ultBtn'),joystick=document.getElementById('joystick'),stick=document.getElementById('stick');
+const pauseBtn=document.getElementById('pauseBtn'),ultBtn=document.getElementById('ultBtn'),dengjieBtn=document.getElementById('dengjieBtn'),joystick=document.getElementById('joystick'),stick=document.getElementById('stick');
 
 const ENEMY_SPRITES=Object.fromEntries(Object.entries(CONFIG.sprites).map(([id,def])=>[id,{...def}]));
 for(const def of Object.values(ENEMY_SPRITES)){def.image=new Image();def.image.src=def.src}
@@ -269,7 +271,7 @@ function createInitialPlayerState(){
  const weapons={};
  for(const key of CONFIG.activeWeaponKeys){weapons[key]=WEAPON_DEFAULTS[key]()}
  const p={
-  x:0,y:0,r:15,hp:125,maxHp:125,speed:230,level:1,exp:0,needExp:36,atk:1,regenPercent:0,pickup:82,invuln:0,waxShield:0,facing:1 ,ultimateTimer:0,ultimateBoost:0,
+  x:0,y:0,r:15,hp:125,maxHp:125,speed:230,level:1,exp:0,needExp:36,atk:1,regenPercent:0,pickup:82,invuln:0,waxShield:0,facing:1 ,ultimateTimer:0,ultimateBoost:0,cangqiang:{lv:0,cd:0},
   sacrifice:{last:0,total:0,lastAt:-999,pending:0,tick:CONFIG.sacrifice.ledgerInterval},
   states:{bewildered:false,canDamage:true,canPassEnemies:false,opacity:1},
   weapons,
@@ -295,7 +297,7 @@ const passiveDesc={
 };
 
 const areaMul=()=>[1,1.1,1.2,1.3,1.4,1.55][player.passives.area.lv];
-const cdMul=()=>[1,.95,.91,.87,.83,.76][player.passives.cd.lv];
+const cdMul=()=>[1,.95,.91,.87,.83,.76][player.passives.cd.lv]*(player.ultimateBoost>0?.7:1);
 const senseMul=()=>[1,1.1,1.2,1.3,1.4,1.6][player.passives.sense.lv];
 const luckMul=()=>[1,1.1,1.2,1.35,1.5,1.75][player.passives.luck.lv];
 const atkMul=()=>player.atk*1.32*(player.ultimateBoost>0?1.75:1);
@@ -894,9 +896,13 @@ function weaponDesc(k,lv){
   fire:['中心大爆燃AOE+灼烧DOT','灼烧伤害提升','爆燃范围提升','灼烧伤害提升','灼烧更久/跳伤更频','冷却降低','进化：火袄蜒行（延迟二段爆燃刷新DOT）'],
   blood:['甲钉×2：发射回旋甲片','甲钉×3：伤害与数量提升','血牙×4：成排牙齿贯穿怪群','血牙×5：数量与穿透提升','血牙速度射程提升','指骨×6：近中距斜向穿刺','三祭合流：3甲钉+4血牙+7指骨齐发'],
   general:['全方向圆形凝视定身','冷却降低','凝视范围增加','追加第二次扫视','定身更强·伤害提升','第三次扫视·范围再增','进化：巴虺一瞥（全图凝视）'],
-  ultimate:['获得置闰五行：主动献祭换 8s 全伤+75%','祭期缩短：60s→45s','祭期缩短：45s→30s（Lv3 解锁施展）'],
+  ultimate:['获得置闰五行：主动献祭换 8s 全伤+75%·冷却-30%','祭期缩短：60s→45s','祭期缩短：45s→30s（Lv3 解锁施展）'],
  };
  return m[k]?.[lv-1]||'强化效果';
+}
+function cangqiangDesc(lv){
+ const m=['苍蜣登阶：全图伤害 40 · 冷却 20s','全图伤害 65 · 冷却 17s','全图伤害 90 · 冷却 14s'];
+ return m[lv-1]||'强化效果';
 }
 function getLevelOptions(){
  const evolve=[...evolveOptions()];
@@ -916,6 +922,7 @@ function randomNormalOptions(){
   opts.push({type:'weapon',key:'blood',title:'获得：大千录',desc:weaponDesc('blood',1),guarantee:true});
  }
  if(player.level>=8&&player.weapons.ultimate.lv===0){opts.push({type:'weapon',key:'ultimate',title:'获得：置闰五行',desc:weaponDesc('ultimate',1),guarantee:true})}
+ if(player.weapons.blood.lv>=7&&player.cangqiang.lv<3){opts.push({type:'cangqiang',key:'cangqiang',title:player.cangqiang.lv===0?'获得：苍蜣登阶':`苍蜣登阶 Lv${player.cangqiang.lv+1}`,desc:cangqiangDesc(player.cangqiang.lv+1),guarantee:true})}
 
  for(const k of wk){
   const w=player.weapons[k];
@@ -987,6 +994,7 @@ function finishLevelChoice(){
 
 function chooseOption(o){
  if(o.type==='weapon'){const w=player.weapons[o.key];w.lv++;updateWeaponName(o.key);showMessage(o.title)}
+ if(o.type==='cangqiang'){player.cangqiang.lv++;showMessage(o.title)}
  if(o.type==='passive'){applyPassive(o.key);showMessage(o.title)}
  if(o.type==='evolve'){
   const w=player.weapons[o.key];
@@ -1305,6 +1313,7 @@ function update(dt){
    if(player.ultimateBoost>0)player.ultimateBoost=Math.max(0,player.ultimateBoost-dt);
    else player.ultimateTimer=Math.max(0,player.ultimateTimer-dt);
   }
+  player.cangqiang.cd=Math.max(0,player.cangqiang.cd-dt);
  }
  let dx=0,dy=0;
  if(keys.has('w')||keys.has('arrowup'))dy-=1;if(keys.has('s')||keys.has('arrowdown'))dy+=1;if(keys.has('a')||keys.has('arrowleft'))dx-=1;if(keys.has('d')||keys.has('arrowright'))dx+=1;
@@ -1794,7 +1803,7 @@ function updateUI(){
  const sacrificeLine=player.weapons.blood.lv>0?`<br>献祭 ${sacrificePerMinute.toFixed(1)}/分 · 本局 ${player.sacrifice.total.toFixed(2)}<br><span style="color:#ff6b60">每秒祭损 ${(player.hp*CONFIG.sacrifice.daqianluDrainPerSecond).toFixed(2)}</span>`:'';
  const ultLine=player.weapons.ultimate&&player.weapons.ultimate.lv>0?(player.ultimateBoost>0?`<br><span style="color:#ff6b30">全伤+75% ${player.ultimateBoost.toFixed(1)}s</span>`:(player.weapons.ultimate.lv<3?`<br><span style="color:#888">置闰五行 Lv${player.weapons.ultimate.lv}/3 未解锁</span>`:(player.ultimateTimer>0?`<br><span style="color:#888">置闰五行 冷却 ${player.ultimateTimer.toFixed(0)}s</span>`:`<br><span style="color:#ffd700">置闰五行 就绪</span>`))):'';
  ui.innerHTML=`血 ${Math.ceil(player.hp)}/${player.maxHp}<br>回 ${(player.regenPercent*100).toFixed(2)}%/s${sacrificeLine}${ultLine}<br>Lv ${player.level}<br>散炁 ${Math.floor(player.exp)}/${player.needExp} · 先天一炁<br>${mm}:${ss}<br>杀 ${state.kill}<br>阶段 ${phase.label}<br>压力 ×${phase.spawnMult.toFixed(2)}<br>下一节点 ${nextLine}`;
- const ws=Object.values(player.weapons).filter(w=>w.lv>0).map(w=>`${w.evolved?'★':''}${w.name} Lv${w.lv}`);
+ const ws=Object.values(player.weapons).filter(w=>w.lv>0).map(w=>`${w.evolved?'★':''}${w.name} Lv${w.lv}`);if(player.cangqiang&&player.cangqiang.lv>0)ws.push(`苍蜣登阶 Lv${player.cangqiang.lv}`);
  const ps=Object.values(player.passives).filter(p=>p.lv>0).map(p=>`${p.name} Lv${p.lv}`);
  skillsUi.innerHTML=`<b>武器</b><br>${ws.join('<br>')||'无'}<br><br><b>被动</b><br>${ps.join('<br>')||'无'}`;
 }
@@ -1818,16 +1827,30 @@ function triggerUltimate(){
  player.ultimateBoost=8;
  player.ultimateTimer=30;
  state.effects.push({type:'ring',x:player.x,y:player.y,r:44,life:.5,maxLife:.5,color:'rgba(100,15,15,.55)'});
- showMessage(player.hp<=1?'锁一血·全伤强化+75%':'献祭·全伤强化+75%');
+ showMessage(player.hp<=1?'锁一血·全伤+75%·冷却-30%':'献祭·全伤+75%·冷却-30%');
 }
 ultBtn.onclick=triggerUltimate;
+function triggerCangQiang(){
+ if(!state.started||state.gameOver||state.paused||state.leveling)return;
+ const c=player.cangqiang;if(!c||c.lv<=0)return;
+ if(c.cd>0){showMessage(`登阶冷却 ${Math.ceil(c.cd)}s`);return;}
+ const costHp=player.maxHp*CONFIG.sacrifice.cangqiangRatio;
+ if(player.hp<=costHp){showMessage('气血不足，无法登阶');return;}
+ COMBAT.takePlayerDamage(player,costHp,DAMAGE.SACRIFICE,{minHp:1});
+ const lv=c.lv,dmg=[0,40,65,90][lv]*atkMul(),bossMul=CONFIG.sacrifice.cangqiangBossMul;
+ for(const e of [...state.enemies]){damageEnemy(e,dmg*(e.boss?bossMul:1));}
+ c.cd=[0,20,17,14][lv];
+ state.effects.push({type:'ring',x:player.x,y:player.y,r:Math.max(innerWidth,innerHeight)*.5,life:.7,maxLife:.7,color:'rgba(40,140,100,.55)',text:'苍蜣登阶'});
+ showMessage(`苍蜣登阶：全图 ${Math.round(dmg)} 伤害`);
+}
+dengjieBtn.onclick=triggerCangQiang;
 // 结算：死亡/通关统一入口。幂等：重复调用不重复改状态。
 function endGame(win,text){
  if(state.gameOver)return;
  state.gameOver=true;state.paused=true;state.leveling=false;state.manualPause=false;state.tasks.length=0;
  player.hp=Math.max(0,player.hp);
  keys.clear();resetStick();
- pauseBtn.style.display='none';ultBtn.style.display='none';levelPanel.style.display='none';
+ pauseBtn.style.display='none';ultBtn.style.display='none';dengjieBtn.style.display='none';levelPanel.style.display='none';
  endTitle.textContent=win?'通关':'游戏结束';
  const t=Math.floor(state.time);
  let skillsHtml='';
@@ -1870,6 +1893,7 @@ function startNewRun(){
  pauseBtn.style.display='block';pauseBtn.textContent='暂停';
  if(!window.matchMedia('(pointer:fine) and (min-width:900px)').matches){if(player.weapons.ultimate&&player.weapons.ultimate.lv>0)ultBtn.style.display='block'}
  if(player.weapons.ultimate&&player.weapons.ultimate.lv>0)ultBtn.style.display='block';
+ if(player.cangqiang&&player.cangqiang.lv>0)dengjieBtn.style.display='block';
  last=performance.now();updateUI();showMessage('荒村起雾。');
 }
 document.getElementById('startBtn').addEventListener('click',startNewRun);
