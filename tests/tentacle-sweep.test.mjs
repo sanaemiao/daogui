@@ -60,6 +60,7 @@ function setupBlackTaisui(T) {
   T.player.needExp = 1e9;
   T.state.lastSpawn = Infinity;
   T.state.nextFlowEvent = 999;
+  T.state.phaseIndex = 0;
   // 只留黑太岁，禁用其它武器避免干扰
   for (const k of ["coin","you","fire","blood","general","ultimate"]) T.player.weapons[k].lv = 0;
   T.player.weapons.suisui.lv = 1;

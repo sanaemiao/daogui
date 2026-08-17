@@ -59,6 +59,7 @@ function isolate(T) {
   T.player.needExp = 1e9;
   T.state.lastSpawn = Infinity;
   T.state.nextFlowEvent = 999;
+  T.state.phaseIndex = 0;
 }
 
 test("20FPS 下一秒位移等于目标速度时间（修复前约 0.66×）", async () => {

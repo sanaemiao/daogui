@@ -59,6 +59,8 @@ function isolate(T) {
   T.player.needExp = 1e9;
   T.state.lastSpawn = Infinity;
   T.state.nextFlowEvent = 999;
+  // 预置 phaseIndex 避免首次 update 阶段切换把 lastSpawn 重置为 min(Infinity,.18)=.18 触发刷怪
+  T.state.phaseIndex = 0;
 }
 
 // ============ 自动暂停保持 ============
@@ -79,27 +81,28 @@ test("自动暂停：失焦后保持暂停，不被安全网复位，手动恢�
 });
 
 // ============ 置闰五行主动触发 ============
-test("置闰五行：Lv<3 不可用，Lv>=3 主动触发并进入冷却", async () => {
+test("置闰五行：Lv1 即可主动触发，Lv3 更高数值，进入冷却", async () => {
   const { T } = await loadGame();
   T.startNewRun();
   const w = T.player.weapons.ultimate;
   const hp0 = T.player.hp;
-  // Lv1：不可触发
+  // Lv1：可触发（+45%/-15%/8s）
   w.lv = 1; T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
   T.triggerUltimate();
-  assert.equal(T.player.ultimateBoost, 0, "Lv1 不触发强化");
-  assert.equal(T.player.hp, hp0, "Lv1 不献祭扣血");
-  // Lv3：可触发
-  w.lv = 3;
-  T.triggerUltimate();
-  assert.equal(T.player.ultimateBoost, 8, "Lv3 触发 8s 强化");
-  assert.equal(T.player.ultimateTimer, 30, "Lv3 进入 30s 祭期冷却");
-  assert.ok(T.player.hp < hp0, "触发献祭扣血");
-  // 冷却中不可重复触发
+  assert.equal(T.player.ultimateBoost, 8, "Lv1 持续 8s");
+  assert.ok(T.player.hp < hp0, "Lv1 献祭扣血");
+  // Lv3：可触发（+75%/-40%/10s）
+  w.lv = 3; T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
   const hp1 = T.player.hp;
   T.triggerUltimate();
-  assert.equal(T.player.hp, hp1, "冷却中不重复扣血");
-  assert.equal(T.player.ultimateBoost, 8, "冷却中不重置强化");
+  assert.equal(T.player.ultimateBoost, 10, "Lv3 持续 10s");
+  assert.equal(T.player.ultimateTimer, 30, "Lv3 进入 30s 祭期冷却");
+  assert.ok(T.player.hp < hp1, "触发献祭扣血");
+  // 冷却中不可重复触发
+  const hp2 = T.player.hp;
+  T.triggerUltimate();
+  assert.equal(T.player.hp, hp2, "冷却中不重复扣血");
+  assert.equal(T.player.ultimateBoost, 10, "冷却中不重置强化");
 });
 
 test("置闰五行：update 不再自动献祭", async () => {

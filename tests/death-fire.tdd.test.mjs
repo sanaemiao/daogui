@@ -122,6 +122,7 @@ function fireOnce(T, lv, evolved = false) {
 function isolateDirector(T) {
   T.state.lastSpawn = Infinity;
   T.state.nextFlowEvent = 999;
+  T.state.phaseIndex = 0;
   for (const e of T.state.enemies) { e.dmg = 0; e.speed = 0; }
 }
 

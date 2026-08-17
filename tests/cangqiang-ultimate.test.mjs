@@ -59,6 +59,7 @@ function isolate(T) {
   T.player.needExp = 1e9;
   T.state.lastSpawn = Infinity;
   T.state.nextFlowEvent = 999;
+  T.state.phaseIndex = 0;
 }
 function mkEnemy(over = {}) {
   return { id: "wumian", x: 100, y: 0, r: 17, hp: 500, maxHp: 500, dmg: 0, speed: 0, dead: false, boss: false, elite: false, exp: 0, hitCd: 0, slow: 0, ...over };
@@ -111,7 +112,7 @@ test("苍蜣登阶：血量不足不可施放（禁止锁1血白嫖）", async (
   assert.equal(T.player.cangqiang.cd, 0, "血量不足时不进入冷却");
 });
 
-test("置闰五行：强化期间冷却缩减 0.7 倍", async () => {
+test("置闰五行：强化期间冷却缩减（Lv3 置闰 -40% → cdMul 0.6 倍）", async () => {
   const { T } = await loadGame();
   T.startNewRun(); isolate(T);
   T.player.weapons.ultimate.lv = 3; T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
@@ -120,7 +121,7 @@ test("置闰五行：强化期间冷却缩减 0.7 倍", async () => {
   assert.ok(T.player.ultimateBoost > 0, "进入强化");
   const during = T.cdMul();
   assert.ok(during < before, `强化期间 cdMul(${during})应小于平时(${before})`);
-  assert.ok(Math.abs(during / before - 0.7) < 0.001, `缩减应为 0.7 倍（实际 ${(during / before).toFixed(3)}）`);
+  assert.ok(Math.abs(during / before - 0.6) < 0.001, `Lv3 缩减应为 0.6 倍（实际 ${(during / before).toFixed(3)}）`);
 });
 
 test("两招联动：置闰五行强化期间苍蜣登阶伤害提升 1.75 倍", async () => {
@@ -147,8 +148,8 @@ test("两招联动：置闰五行强化期间苍蜣登阶伤害提升 1.75 倍",
 
 test("苍蜣登阶：3级数值成长（Lv3 伤害 > Lv1）", async () => {
   const html = await readFile(GAME, "utf8");
-  assert.match(html, /dmg=\[0,40,65,90\]\[lv\]/, "3级全图伤害 40/65/90");
-  assert.match(html, /c\.cd=\[0,20,17,14\]\[lv\]/, "3级冷却 20/17/14");
+  assert.match(html, /dmg=CANGQIANG_DMG\[lv\]\*atkMul\(\)/, "苍蜣登阶伤害走 CANGQIANG_DMG 表");
+  assert.match(html, /c\.cd=60;/, "苍蜣登阶冷却恒 60s（不吃置闰缩减）");
   const { T } = await loadGame();
   T.startNewRun(); isolate(T);
   T.player.hp = T.player.maxHp;
@@ -171,21 +172,22 @@ test("置闰五行按钮：获得置闰五行后显示（修复 D1：chooseOptio
   assert.equal(elements.ultBtn.style.display, "block", "获得置闰五行后按钮应显示");
 });
 
-test("置闰五行：按钮 onclick 触发 8s 强化 + 冷却-30% + 献祭扣血", async () => {
+test("置闰五行：按钮 onclick 触发 10s 强化（Lv3） + 冷却-40% + 献祭扣血", async () => {
   const { T, elements } = await loadGame();
   T.startNewRun();
-  T.player.weapons.ultimate.lv = 3;
+  T.player.weapons.ultimate.lv = 0;
+  T.player.ultimateTimer = 0;
+  T.player.ultimateBoost = 0;
+  T.chooseOption({ type: "weapon", key: "ultimate", title: "获得：置闰五行" }); // lv→1，触发按钮显示
+  assert.equal(elements.ultBtn.style.display, "block", "获得后按钮显示");
+  assert.equal(typeof elements.ultBtn.onclick, "function", "按钮绑定 onclick");
+  T.player.weapons.ultimate.lv = 3; // 升到 Lv3 再点击
   T.player.ultimateTimer = 0;
   T.player.ultimateBoost = 0;
   const cdBefore = T.cdMul();
   const hp0 = T.player.hp;
-  // 升级置闰五行触发显示（chooseOption 应设 ultBtn block）
-  T.chooseOption({ type: "weapon", key: "ultimate", title: "置闰五行升级" });
-  assert.equal(elements.ultBtn.style.display, "block", "升级后按钮显示");
-  assert.equal(typeof elements.ultBtn.onclick, "function", "按钮绑定 onclick");
-  // 模拟真实点击
   elements.ultBtn.onclick();
-  assert.equal(T.player.ultimateBoost, 8, "触发 8s 强化");
+  assert.equal(T.player.ultimateBoost, 10, "Lv3 触发 10s 强化（规格 8/9/10）");
   assert.ok(T.player.hp < hp0, "献祭扣血");
   assert.ok(T.cdMul() < cdBefore, "冷却缩减生效");
 });

@@ -59,6 +59,7 @@ function isolate(T) {
   T.player.needExp = 1e9;
   T.state.lastSpawn = Infinity;
   T.state.nextFlowEvent = 999;
+  T.state.phaseIndex = 0;
 }
 
 // ============ 大千录分支死数据清理 ============

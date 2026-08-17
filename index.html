@@ -297,10 +297,19 @@ const passiveDesc={
 };
 
 const areaMul=()=>[1,1.1,1.2,1.3,1.4,1.55][player.passives.area.lv];
-const cdMul=()=>[1,.95,.91,.87,.83,.76][player.passives.cd.lv]*(player.ultimateBoost>0?.7:1);
+// 置闰五行按等级：全伤倍率 Lv1/2/3 = +45%/+55%/+75%（最终规格）
+const ULT_BOOST_MUL=[1,1.45,1.55,1.75];
+// 置闰五行按等级：常规武器冷却倍率 Lv1/2/3 = -15%/-25%/-40%（最终规格）
+const ULT_CD_MUL=[1,.85,.75,.6];
+// 置闰五行按等级：强化持续 Lv1/2/3 = 8/9/10s（最终规格）
+const ULT_DURATION=[0,8,9,10];
+// 苍蜣登阶按等级：全图基础伤害（Lv1 以基础 atkMul 1.32 可一击清除终局最高普通怪 @600s=194HP）
+const CANGQIANG_DMG=[0,200,260,320];
+// 置闰冷却倍率仅影响常规武器（cdMul 全局）；置闰自身祭期 CD 与苍蜣 CD 均为固定值不乘 cdMul
+const cdMul=()=>[1,.95,.91,.87,.83,.76][player.passives.cd.lv]*(player.ultimateBoost>0?ULT_CD_MUL[player.weapons.ultimate.lv]:1);
 const senseMul=()=>[1,1.1,1.2,1.3,1.4,1.6][player.passives.sense.lv];
 const luckMul=()=>[1,1.1,1.2,1.35,1.5,1.75][player.passives.luck.lv];
-const atkMul=()=>player.atk*1.32*(player.ultimateBoost>0?1.75:1);
+const atkMul=()=>player.atk*1.32*(player.ultimateBoost>0?ULT_BOOST_MUL[player.weapons.ultimate.lv]:1);
 
 function applyPassive(k){
  const p=player.passives[k]; if(!p||p.lv>=5)return; p.lv++;
@@ -896,7 +905,7 @@ function weaponDesc(k,lv){
   fire:['中心大爆燃AOE+灼烧DOT','灼烧伤害提升','爆燃范围提升','灼烧伤害提升','灼烧更久/跳伤更频','冷却降低','进化：火袄蜒行（延迟二段爆燃刷新DOT）'],
   blood:['甲钉×2：发射回旋甲片','甲钉×3：伤害与数量提升','血牙×4：成排牙齿贯穿怪群','血牙×5：数量与穿透提升','血牙速度射程提升','指骨×6：近中距斜向穿刺','三祭合流：3甲钉+4血牙+7指骨齐发'],
   general:['全方向圆形凝视定身','冷却降低','凝视范围增加','追加第二次扫视','定身更强·伤害提升','第三次扫视·范围再增','进化：巴虺一瞥（全图凝视）'],
-  ultimate:['获得置闰五行：主动献祭换 8s 全伤+75%·冷却-30%','祭期缩短：60s→45s','祭期缩短：45s→30s（Lv3 解锁施展）'],
+  ultimate:['获得置闰五行：主动献祭换 8s 全伤+45%·冷却-15%','9s 全伤+55%·冷却-25%','10s 全伤+75%·冷却-40%'],
  };
  return m[k]?.[lv-1]||'强化效果';
 }
@@ -1801,7 +1810,7 @@ function updateUI(){
  const nextLine=next?`${formatClock(next.at)} ${next.label}`:'击败丹阳子';
  const sacrificePerMinute=player.hp*CONFIG.sacrifice.daqianluDrainPerSecond*60;
  const sacrificeLine=player.weapons.blood.lv>0?`<br>献祭 ${sacrificePerMinute.toFixed(1)}/分 · 本局 ${player.sacrifice.total.toFixed(2)}<br><span style="color:#ff6b60">每秒祭损 ${(player.hp*CONFIG.sacrifice.daqianluDrainPerSecond).toFixed(2)}</span>`:'';
- const ultLine=player.weapons.ultimate&&player.weapons.ultimate.lv>0?(player.ultimateBoost>0?`<br><span style="color:#ff6b30">全伤+75% ${player.ultimateBoost.toFixed(1)}s</span>`:(player.weapons.ultimate.lv<3?`<br><span style="color:#888">置闰五行 Lv${player.weapons.ultimate.lv}/3 未解锁</span>`:(player.ultimateTimer>0?`<br><span style="color:#888">置闰五行 冷却 ${player.ultimateTimer.toFixed(0)}s</span>`:`<br><span style="color:#ffd700">置闰五行 就绪</span>`))):'';
+ const ultLine=player.weapons.ultimate&&player.weapons.ultimate.lv>0?(player.ultimateBoost>0?`<br><span style="color:#ff6b30">全伤+${(ULT_BOOST_MUL[player.weapons.ultimate.lv]-1)*100}%·冷却-${(1-ULT_CD_MUL[player.weapons.ultimate.lv])*100}% ${player.ultimateBoost.toFixed(1)}s</span>`:(player.ultimateTimer>0?`<br><span style="color:#888">置闰五行 冷却 ${player.ultimateTimer.toFixed(0)}s</span>`:`<br><span style="color:#ffd700">置闰五行 Lv${player.weapons.ultimate.lv}·+${(ULT_BOOST_MUL[player.weapons.ultimate.lv]-1)*100}%/-${(1-ULT_CD_MUL[player.weapons.ultimate.lv])*100}%</span>`)):'';
  ui.innerHTML=`血 ${Math.ceil(player.hp)}/${player.maxHp}<br>回 ${(player.regenPercent*100).toFixed(2)}%/s${sacrificeLine}${ultLine}<br>Lv ${player.level}<br>散炁 ${Math.floor(player.exp)}/${player.needExp} · 先天一炁<br>${mm}:${ss}<br>杀 ${state.kill}<br>阶段 ${phase.label}<br>压力 ×${phase.spawnMult.toFixed(2)}<br>下一节点 ${nextLine}`;
  const ws=Object.values(player.weapons).filter(w=>w.lv>0).map(w=>`${w.evolved?'★':''}${w.name} Lv${w.lv}`);if(player.cangqiang&&player.cangqiang.lv>0)ws.push(`苍蜣登阶 Lv${player.cangqiang.lv}`);
  const ps=Object.values(player.passives).filter(p=>p.lv>0).map(p=>`${p.name} Lv${p.lv}`);
@@ -1819,15 +1828,15 @@ function togglePause(){if(!state.started||state.leveling||state.gameOver)return;
 function triggerUltimate(){
  if(!state.started||state.gameOver||state.paused||state.leveling)return;
  const w=player.weapons.ultimate;
- if(!w||w.lv<3){showMessage('置闰五行需 Lv3 方可施展');return;}
+ if(!w||w.lv<=0)return;
  if(player.ultimateBoost>0){showMessage('置闰五行强化中');return;}
  if(player.ultimateTimer>0){showMessage(`置闰五行祭期冷却 ${Math.ceil(player.ultimateTimer)}s`);return;}
  const cost=player.hp*CONFIG.sacrifice.ultimateRatio;
  if(player.hp>CONFIG.sacrifice.minHp)COMBAT.takePlayerDamage(player,cost,DAMAGE.SACRIFICE,{minHp:CONFIG.sacrifice.minHp});
- player.ultimateBoost=8;
- player.ultimateTimer=30;
+ player.ultimateBoost=ULT_DURATION[w.lv]||8; // 持续按等级 8/9/10s
+ player.ultimateTimer=30; // 自身祭期 CD 恒 30s，不吃自身冷却缩减
  state.effects.push({type:'ring',x:player.x,y:player.y,r:44,life:.5,maxLife:.5,color:'rgba(100,15,15,.55)'});
- showMessage(player.hp<=1?'锁一血·全伤+75%·冷却-30%':'献祭·全伤+75%·冷却-30%');
+ showMessage(player.hp<=1?`锁一血·全伤+${(ULT_BOOST_MUL[w.lv]-1)*100}%·冷却-${(1-ULT_CD_MUL[w.lv])*100}%`:`献祭·全伤+${(ULT_BOOST_MUL[w.lv]-1)*100}%·冷却-${(1-ULT_CD_MUL[w.lv])*100}%`);
 }
 ultBtn.onclick=triggerUltimate;
 function triggerCangQiang(){
@@ -1837,9 +1846,9 @@ function triggerCangQiang(){
  const costHp=player.maxHp*CONFIG.sacrifice.cangqiangRatio;
  if(player.hp<=costHp){showMessage('气血不足，无法登阶');return;}
  COMBAT.takePlayerDamage(player,costHp,DAMAGE.SACRIFICE,{minHp:1});
- const lv=c.lv,dmg=[0,40,65,90][lv]*atkMul(),bossMul=CONFIG.sacrifice.cangqiangBossMul;
+ const lv=c.lv,dmg=CANGQIANG_DMG[lv]*atkMul(),bossMul=CONFIG.sacrifice.cangqiangBossMul;
  for(const e of [...state.enemies]){damageEnemy(e,dmg*(e.boss?bossMul:1));}
- c.cd=[0,20,17,14][lv];
+ c.cd=60; // 苍蜣登阶自身基础 CD 恒 60s，不吃置闰/被动冷却缩减
  state.effects.push({type:'ring',x:player.x,y:player.y,r:Math.max(innerWidth,innerHeight)*.5,life:.7,maxLife:.7,color:'rgba(40,140,100,.55)',text:'苍蜣登阶'});
  showMessage(`苍蜣登阶：全图 ${Math.round(dmg)} 伤害`);
 }

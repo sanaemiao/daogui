@@ -60,6 +60,7 @@ function setupEye(T, lv) {
   T.player.needExp = 1e9;
   T.state.lastSpawn = Infinity;
   T.state.nextFlowEvent = 999;
+  T.state.phaseIndex = 0;
   for (const k of ["coin","you","suisui","fire","blood","ultimate"]) T.player.weapons[k].lv = 0;
   T.player.weapons.general.lv = lv;
   T.player.weapons.general.cd = 0;
