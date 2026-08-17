@@ -91,30 +91,33 @@ test("置闰五行：三层全伤/冷却/持续递增（45/55/75%·15/25/40%·8/
   }
 });
 
-test("置闰五行：自身祭期 CD 固定 30s，不吃自身冷却缩减", async () => {
+test("置闰五行：自身祭期 CD 分级 60/45/30s，不吃自身冷却缩减", async () => {
   const { T } = await loadGame();
   T.startNewRun();
-  for (const lv of [1, 3]) {
+  const cases = [[1, 60], [2, 45], [3, 30]];
+  for (const [lv, cd] of cases) {
     T.startNewRun();
     T.player.weapons.ultimate.lv = lv;
     T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
     T.triggerUltimate();
-    assert.equal(T.player.ultimateTimer, 30, `Lv${lv} 祭期冷却恒 30s（不乘 cdMul）`);
+    assert.equal(T.player.ultimateTimer, cd, `Lv${lv} 祭期冷却 ${cd}s（不乘 cdMul）`);
   }
 });
 
-test("苍蜣登阶：各级冷却均恒 60s，不吃置闰冷却缩减", async () => {
+test("苍蜣登阶：各级冷却分级 90/75/60s，不吃置闰冷却缩减", async () => {
   const { T } = await loadGame();
   T.startNewRun();
-  for (let lv = 1; lv <= 3; lv++) {
+  const cases = [[1, 90], [2, 75], [3, 60]];
+  for (const [lv, cd] of cases) {
+    T.startNewRun();
     T.player.cangqiang.lv = lv; T.player.cangqiang.cd = 0;
     T.player.hp = T.player.maxHp;
     T.state.enemies.length = 0;
     T.state.enemies.push(mkEnemy());
     T.triggerCangQiang();
-    assert.ok(Math.abs(T.player.cangqiang.cd - 60) < 1e-6, `Lv${lv} 冷却应恒 60s（实际 ${T.player.cangqiang.cd}）`);
+    assert.ok(Math.abs(T.player.cangqiang.cd - cd) < 1e-6, `Lv${lv} 冷却应 ${cd}s（实际 ${T.player.cangqiang.cd}）`);
   }
-  // 置闰强化期间（cdMul 已变）仍恒 60s
+  // 置闰强化期间（cdMul 已变）仍按分级不变
   T.startNewRun();
   T.player.weapons.ultimate.lv = 3;
   T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
@@ -125,7 +128,7 @@ test("苍蜣登阶：各级冷却均恒 60s，不吃置闰冷却缩减", async (
   T.state.enemies.length = 0;
   T.state.enemies.push(mkEnemy());
   T.triggerCangQiang();
-  assert.ok(Math.abs(T.player.cangqiang.cd - 60) < 1e-6, `置闰强化期间苍蜣冷却仍恒 60s（实际 ${T.player.cangqiang.cd}）`);
+  assert.ok(Math.abs(T.player.cangqiang.cd - 90) < 1e-6, `置闰强化期间苍蜣冷却仍 90s（实际 ${T.player.cangqiang.cd}）`);
 });
 
 test("苍蜣登阶：固定三级伤害表，Lv1 无攻击被动一击清除终局最高普通怪（@600s）", async () => {
@@ -145,12 +148,12 @@ test("苍蜣登阶：固定三级伤害表，Lv1 无攻击被动一击清除终�
   assert.ok(e.hp <= 0, `Lv1 应一击清除终局最高普通怪 HP=${maxHp.toFixed(0)}，剩余 ${e.hp.toFixed(1)}`);
 });
 
-test("苍蜣登阶：Lv2/Lv3 伤害严格高于 Lv1（固定表 200/260/320 验证）", async () => {
+test("苍蜣登阶：Lv2/Lv3 伤害严格高于 Lv1（固定表 180/200/240 验证）", async () => {
   const { T } = await loadGame();
   T.startNewRun();
   T.player.weapons.ultimate.lv = 0;
   T.player.atk = 1;
-  assert.deepEqual([...T.CANGQIANG_DMG], [0, 200, 260, 320], "三级固定伤害表");
+  assert.deepEqual([...T.CANGQIANG_DMG], [0, 180, 200, 240], "三级固定伤害表");
   const dmg = [];
   for (let lv = 1; lv <= 3; lv++) {
     T.player.cangqiang.lv = lv; T.player.cangqiang.cd = 0;

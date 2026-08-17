@@ -303,8 +303,12 @@ const ULT_BOOST_MUL=[1,1.45,1.55,1.75];
 const ULT_CD_MUL=[1,.85,.75,.6];
 // 置闰五行按等级：强化持续 Lv1/2/3 = 8/9/10s（最终规格）
 const ULT_DURATION=[0,8,9,10];
-// 苍蜣登阶按等级：全图基础伤害（Lv1 以基础 atkMul 1.32 可一击清除终局最高普通怪 @600s=194HP）
-const CANGQIANG_DMG=[0,200,260,320];
+// 苍蜣登阶按等级：全图基础伤害 Lv1/2/3 = 180/200/240（用户最终数值）
+const CANGQIANG_DMG=[0,180,200,240];
+// 苍蜣登阶按等级：自身 CD Lv1/2/3 = 90/75/60s（用户最终数值，不吃置闰/被动缩减）
+const CANGQIANG_CD=[0,90,75,60];
+// 置闰五行按等级：自身祭期 CD Lv1/2/3 = 60/45/30s（用户最终数值，不吃自身冷却缩减）
+const ULT_CD=[0,60,45,30];
 // 置闰冷却倍率仅影响常规武器（cdMul 全局）；置闰自身祭期 CD 与苍蜣 CD 均为固定值不乘 cdMul
 const cdMul=()=>[1,.95,.91,.87,.83,.76][player.passives.cd.lv]*(player.ultimateBoost>0?ULT_CD_MUL[player.weapons.ultimate.lv]:1);
 const senseMul=()=>[1,1.1,1.2,1.3,1.4,1.6][player.passives.sense.lv];
@@ -910,7 +914,7 @@ function weaponDesc(k,lv){
  return m[k]?.[lv-1]||'强化效果';
 }
 function cangqiangDesc(lv){
- const m=['苍蜣登阶：全图伤害 40 · 冷却 20s','全图伤害 65 · 冷却 17s','全图伤害 90 · 冷却 14s'];
+ const m=['苍蜣登阶：全图伤害 180 · 冷却 90s','全图伤害 200 · 冷却 75s','全图伤害 240 · 冷却 60s'];
  return m[lv-1]||'强化效果';
 }
 function getLevelOptions(){
@@ -1834,7 +1838,7 @@ function triggerUltimate(){
  const cost=player.hp*CONFIG.sacrifice.ultimateRatio;
  if(player.hp>CONFIG.sacrifice.minHp)COMBAT.takePlayerDamage(player,cost,DAMAGE.SACRIFICE,{minHp:CONFIG.sacrifice.minHp});
  player.ultimateBoost=ULT_DURATION[w.lv]||8; // 持续按等级 8/9/10s
- player.ultimateTimer=30; // 自身祭期 CD 恒 30s，不吃自身冷却缩减
+ player.ultimateTimer=ULT_CD[w.lv]||30; // 自身祭期 CD 按等级 60/45/30s，不吃自身冷却缩减
  state.effects.push({type:'ring',x:player.x,y:player.y,r:44,life:.5,maxLife:.5,color:'rgba(100,15,15,.55)'});
  showMessage(player.hp<=1?`锁一血·全伤+${(ULT_BOOST_MUL[w.lv]-1)*100}%·冷却-${(1-ULT_CD_MUL[w.lv])*100}%`:`献祭·全伤+${(ULT_BOOST_MUL[w.lv]-1)*100}%·冷却-${(1-ULT_CD_MUL[w.lv])*100}%`);
 }
@@ -1848,7 +1852,7 @@ function triggerCangQiang(){
  COMBAT.takePlayerDamage(player,costHp,DAMAGE.SACRIFICE,{minHp:1});
  const lv=c.lv,dmg=CANGQIANG_DMG[lv]*atkMul(),bossMul=CONFIG.sacrifice.cangqiangBossMul;
  for(const e of [...state.enemies]){damageEnemy(e,dmg*(e.boss?bossMul:1));}
- c.cd=60; // 苍蜣登阶自身基础 CD 恒 60s，不吃置闰/被动冷却缩减
+ c.cd=CANGQIANG_CD[lv]||60; // 苍蜣登阶自身 CD 按等级 90/75/60s，不吃置闰/被动冷却缩减
  state.effects.push({type:'ring',x:player.x,y:player.y,r:Math.max(innerWidth,innerHeight)*.5,life:.7,maxLife:.7,color:'rgba(40,140,100,.55)',text:'苍蜣登阶'});
  showMessage(`苍蜣登阶：全图 ${Math.round(dmg)} 伤害`);
 }

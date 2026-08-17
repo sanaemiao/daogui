@@ -149,7 +149,7 @@ test("两招联动：置闰五行强化期间苍蜣登阶伤害提升 1.75 倍",
 test("苍蜣登阶：3级数值成长（Lv3 伤害 > Lv1）", async () => {
   const html = await readFile(GAME, "utf8");
   assert.match(html, /dmg=CANGQIANG_DMG\[lv\]\*atkMul\(\)/, "苍蜣登阶伤害走 CANGQIANG_DMG 表");
-  assert.match(html, /c\.cd=60;/, "苍蜣登阶冷却恒 60s（不吃置闰缩减）");
+  assert.match(html, /c\.cd=CANGQIANG_CD\[lv\]/, "苍蜣登阶冷却走 CANGQIANG_CD 分级表 90/75/60s（不吃置闰缩减）");
   const { T } = await loadGame();
   T.startNewRun(); isolate(T);
   T.player.hp = T.player.maxHp;
