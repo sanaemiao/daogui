@@ -993,7 +993,7 @@ function finishLevelChoice(){
 
 
 function chooseOption(o){
- if(o.type==='weapon'){const w=player.weapons[o.key];w.lv++;updateWeaponName(o.key);showMessage(o.title)}
+ if(o.type==='weapon'){const w=player.weapons[o.key];w.lv++;updateWeaponName(o.key);if(o.key==='ultimate')ultBtn.style.display='block';showMessage(o.title)}
  if(o.type==='cangqiang'){player.cangqiang.lv++;dengjieBtn.style.display='block';showMessage(o.title)}
  if(o.type==='passive'){applyPassive(o.key);showMessage(o.title)}
  if(o.type==='evolve'){

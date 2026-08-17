@@ -162,6 +162,34 @@ test("苍蜣登阶：3级数值成长（Lv3 伤害 > Lv1）", async () => {
   assert.ok(dmg3 > dmg1, `Lv3 伤害(${dmg3.toFixed(1)})应大于 Lv1(${dmg1.toFixed(1)})`);
 });
 
+test("置闰五行按钮：获得置闰五行后显示（修复 D1：chooseOption 无 ultBtn 显示更新）", async () => {
+  const { T, elements } = await loadGame();
+  T.startNewRun();
+  T.player.weapons.ultimate.lv = 0;
+  T.chooseOption({ type: "weapon", key: "ultimate", title: "获得：置闰五行" });
+  assert.equal(T.player.weapons.ultimate.lv, 1, "获得后 lv=1");
+  assert.equal(elements.ultBtn.style.display, "block", "获得置闰五行后按钮应显示");
+});
+
+test("置闰五行：按钮 onclick 触发 8s 强化 + 冷却-30% + 献祭扣血", async () => {
+  const { T, elements } = await loadGame();
+  T.startNewRun();
+  T.player.weapons.ultimate.lv = 3;
+  T.player.ultimateTimer = 0;
+  T.player.ultimateBoost = 0;
+  const cdBefore = T.cdMul();
+  const hp0 = T.player.hp;
+  // 升级置闰五行触发显示（chooseOption 应设 ultBtn block）
+  T.chooseOption({ type: "weapon", key: "ultimate", title: "置闰五行升级" });
+  assert.equal(elements.ultBtn.style.display, "block", "升级后按钮显示");
+  assert.equal(typeof elements.ultBtn.onclick, "function", "按钮绑定 onclick");
+  // 模拟真实点击
+  elements.ultBtn.onclick();
+  assert.equal(T.player.ultimateBoost, 8, "触发 8s 强化");
+  assert.ok(T.player.hp < hp0, "献祭扣血");
+  assert.ok(T.cdMul() < cdBefore, "冷却缩减生效");
+});
+
 test("苍蜣登阶按钮：Lv7 未学隐藏，Lv1 后显示", async () => {
   const { T, elements } = await loadGame();
   T.startNewRun();
