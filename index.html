@@ -83,6 +83,7 @@ canvas{display:block;width:100vw;height:100vh;background:radial-gradient(circle,
         </figure>
       </div>
     </details>
+    <label class="invincibleOpt" style="display:block;margin:12px auto 4px;width:fit-content;color:#ffd58a;cursor:pointer;font-weight:bold"><input type="checkbox" id="invincibleChk" /> 无敌模式（免疫一切伤害）</label>
     <button class="mainBtn" id="startBtn">开始游戏</button>
   </div>
 </div>
@@ -159,7 +160,7 @@ const joy={x:0,y:0,active:false,id:null,cx:74,cy:innerHeight-74};
 addEventListener('pointerdown',e=>{
  if(!state.started||state.leveling||state.gameOver)return;
  if(e.pointerType==='mouse')return;
- if(e.target.closest('.panel')||e.target.id==='pauseBtn')return;
+ if(e.target.closest('.panel')||e.target.id==='pauseBtn'||e.target.id==='ultBtn'||e.target.id==='dengjieBtn')return;
  joy.active=true;
  joy.id=e.pointerId;
  joy.cx=e.clientX;
@@ -271,7 +272,7 @@ function createInitialPlayerState(){
  const weapons={};
  for(const key of CONFIG.activeWeaponKeys){weapons[key]=WEAPON_DEFAULTS[key]()}
  const p={
-  x:0,y:0,r:15,hp:125,maxHp:125,speed:230,level:1,exp:0,needExp:36,atk:1,regenPercent:0,pickup:82,invuln:0,waxShield:0,facing:1 ,ultimateTimer:0,ultimateBoost:0,cangqiang:{lv:0,cd:0},
+  x:0,y:0,r:15,hp:125,maxHp:125,speed:230,level:1,exp:0,needExp:36,atk:1,regenPercent:0,pickup:82,invuln:0,waxShield:0,facing:1 ,ultimateTimer:0,ultimateBoost:0,cangqiang:{lv:0,cd:0},invincible:false,
   sacrifice:{last:0,total:0,lastAt:-999,pending:0,tick:CONFIG.sacrifice.ledgerInterval},
   states:{bewildered:false,canDamage:true,canPassEnemies:false,opacity:1},
   weapons,
@@ -299,6 +300,8 @@ const passiveDesc={
 const areaMul=()=>[1,1.1,1.2,1.3,1.4,1.55][player.passives.area.lv];
 // 置闰五行按等级：全伤倍率 Lv1/2/3 = +45%/+55%/+75%（最终规格）
 const ULT_BOOST_MUL=[1,1.45,1.55,1.75];
+// 置闰强化期间玩家身上小型特效色
+const ULT_AURA_COLOR='rgba(255,200,80,.35)';
 // 置闰五行按等级：常规武器冷却倍率 Lv1/2/3 = -15%/-25%/-40%（最终规格）
 const ULT_CD_MUL=[1,.85,.75,.6];
 // 置闰五行按等级：强化持续 Lv1/2/3 = 8/9/10s（最终规格）
@@ -1322,10 +1325,14 @@ function update(dt){
  state.time+=dt;
  if(!state.leveling&&!state.paused){
   // 置闰五行：主动触发（triggerUltimate），此处仅推进强化与冷却计时，不再自动献祭
-  if(player.weapons.ultimate&&player.weapons.ultimate.lv>0){
-   if(player.ultimateBoost>0)player.ultimateBoost=Math.max(0,player.ultimateBoost-dt);
-   else player.ultimateTimer=Math.max(0,player.ultimateTimer-dt);
+ if(player.weapons.ultimate&&player.weapons.ultimate.lv>0){
+  if(player.ultimateBoost>0){
+   player.ultimateBoost=Math.max(0,player.ultimateBoost-dt);
+   // 强化期间在玩家身上生成小型光环特效（每帧刷新，随 boost 结束自动消失）
+   state.effects.push({type:'ultAura',x:player.x,y:player.y,r:player.r+10,life:.1,maxLife:.1,color:ULT_AURA_COLOR});
   }
+  else player.ultimateTimer=Math.max(0,player.ultimateTimer-dt);
+ }
   player.cangqiang.cd=Math.max(0,player.cangqiang.cd-dt);
  }
  let dx=0,dy=0;
@@ -1691,6 +1698,7 @@ function drawEffect(ef){
   const progress=1-ef.life/ef.maxLife,grad=ctx.createRadialGradient(p.x,p.y,20,p.x,p.y,Math.max(innerWidth,innerHeight)*.7);grad.addColorStop(0,'rgba(226,214,192,.35)');grad.addColorStop(.38,'rgba(111,21,29,.28)');grad.addColorStop(1,'rgba(41,55,65,.5)');ctx.globalAlpha=clamp(ef.life/ef.maxLife,0,1);ctx.fillStyle=grad;ctx.fillRect(0,0,innerWidth,innerHeight);ctx.strokeStyle='rgba(150,80,60,.8)';ctx.lineWidth=6;ctx.beginPath();ctx.arc(p.x,p.y,progress*Math.max(innerWidth,innerHeight)*.65,0,Math.PI*2);ctx.stroke();
  }
  if(ef.type==='ring'){ctx.globalAlpha=clamp(ef.life/.35,0,1);ctx.strokeStyle=ef.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(p.x,p.y,ef.r*(1-ef.life*.5),0,Math.PI*2);ctx.stroke();if(ef.text){ctx.fillStyle='#ffe7c0';ctx.font='bold 14px Microsoft YaHei';ctx.textAlign='center';ctx.fillText(ef.text,p.x,p.y-ef.r*.35)}}
+ if(ef.type==='ultAura'){const z=viewZoom(),r=ef.r*z;ctx.globalAlpha=clamp(ef.life/ef.maxLife,0,1);ctx.strokeStyle=ef.color;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.stroke();ctx.fillStyle='rgba(255,200,80,.06)';ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,220,150,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(p.x,p.y,r*.62,0,Math.PI*2);ctx.stroke()}
  if(ef.type==='bellWave'){
   const progress=1-ef.life/ef.maxLife;
   ctx.globalAlpha=clamp(ef.life/ef.maxLife,0,1);
@@ -1815,7 +1823,8 @@ function updateUI(){
  const sacrificePerMinute=player.hp*CONFIG.sacrifice.daqianluDrainPerSecond*60;
  const sacrificeLine=player.weapons.blood.lv>0?`<br>献祭 ${sacrificePerMinute.toFixed(1)}/分 · 本局 ${player.sacrifice.total.toFixed(2)}<br><span style="color:#ff6b60">每秒祭损 ${(player.hp*CONFIG.sacrifice.daqianluDrainPerSecond).toFixed(2)}</span>`:'';
  const ultLine=player.weapons.ultimate&&player.weapons.ultimate.lv>0?(player.ultimateBoost>0?`<br><span style="color:#ff6b30">全伤+${(ULT_BOOST_MUL[player.weapons.ultimate.lv]-1)*100}%·冷却-${(1-ULT_CD_MUL[player.weapons.ultimate.lv])*100}% ${player.ultimateBoost.toFixed(1)}s</span>`:(player.ultimateTimer>0?`<br><span style="color:#888">置闰五行 冷却 ${player.ultimateTimer.toFixed(0)}s</span>`:`<br><span style="color:#ffd700">置闰五行 Lv${player.weapons.ultimate.lv}·+${(ULT_BOOST_MUL[player.weapons.ultimate.lv]-1)*100}%/-${(1-ULT_CD_MUL[player.weapons.ultimate.lv])*100}%</span>`)):'';
- ui.innerHTML=`血 ${Math.ceil(player.hp)}/${player.maxHp}<br>回 ${(player.regenPercent*100).toFixed(2)}%/s${sacrificeLine}${ultLine}<br>Lv ${player.level}<br>散炁 ${Math.floor(player.exp)}/${player.needExp} · 先天一炁<br>${mm}:${ss}<br>杀 ${state.kill}<br>阶段 ${phase.label}<br>压力 ×${phase.spawnMult.toFixed(2)}<br>下一节点 ${nextLine}`;
+ const invLine=player.invincible?'<br><span style="color:#ff4d6b;font-weight:bold">【无敌模式·免疫一切伤害】</span>':'';
+ ui.innerHTML=`血 ${Math.ceil(player.hp)}/${player.maxHp}<br>回 ${(player.regenPercent*100).toFixed(2)}%/s${sacrificeLine}${ultLine}${invLine}<br>Lv ${player.level}<br>散炁 ${Math.floor(player.exp)}/${player.needExp} · 先天一炁<br>${mm}:${ss}<br>杀 ${state.kill}<br>阶段 ${phase.label}<br>压力 ×${phase.spawnMult.toFixed(2)}<br>下一节点 ${nextLine}`;
  const ws=Object.values(player.weapons).filter(w=>w.lv>0).map(w=>`${w.evolved?'★':''}${w.name} Lv${w.lv}`);if(player.cangqiang&&player.cangqiang.lv>0)ws.push(`苍蜣登阶 Lv${player.cangqiang.lv}`);
  const ps=Object.values(player.passives).filter(p=>p.lv>0).map(p=>`${p.name} Lv${p.lv}`);
  skillsUi.innerHTML=`<b>武器</b><br>${ws.join('<br>')||'无'}<br><br><b>被动</b><br>${ps.join('<br>')||'无'}`;
@@ -1845,7 +1854,7 @@ function triggerUltimate(){
 ultBtn.onclick=triggerUltimate;
 function triggerCangQiang(){
  if(!state.started||state.gameOver||state.paused||state.leveling)return;
- const c=player.cangqiang;if(!c||c.lv<=0)return;
+ const c=player.cangqiang;if(!c||c.lv<=0){showMessage('尚未习得苍蜣登阶');return;}
  if(c.cd>0){showMessage(`登阶冷却 ${Math.ceil(c.cd)}s`);return;}
  const costHp=player.maxHp*CONFIG.sacrifice.cangqiangRatio;
  if(player.hp<=costHp){showMessage('气血不足，无法登阶');return;}
@@ -1901,6 +1910,9 @@ function startNewRun(){
  state.hitstop=0;state.shakeX=0;state.shakeY=0;state.playerTrail.length=0;
  for(const list of [state.enemies,state.bullets,state.enemyBullets,state.youLaoYe,state.gems,state.effects,state.texts])list.length=0;
  keys.clear();resetStick();resetPlayerForNewRun();
+ // 无敌模式：从首页勾选读取（重开沿用当前勾选状态）
+ const invChk=document.getElementById('invincibleChk');
+ player.invincible=!!(invChk&&invChk.checked);
  document.querySelectorAll('.skipExtra').forEach(el=>el.remove());
  startPanel.style.display='none';levelPanel.style.display='none';endPanel.style.display='none';
  pauseBtn.style.display='block';pauseBtn.textContent='暂停';

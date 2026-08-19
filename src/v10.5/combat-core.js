@@ -36,7 +36,10 @@
     const damageType = type || DAMAGE_TYPES.CONTACT;
     const incoming = Math.max(0, Number(amount) || 0);
     if (incoming <= 0) return { applied: 0, absorbed: 0, ignored: true, type: damageType };
-
+    // 无敌模式：所有受伤路径（contact/projectile/telegraph/pollution/sacrifice 等）免疫
+    if (player.invincible) {
+      return { applied: 0, absorbed: 0, ignored: true, type: damageType };
+    }
     if (damageType === DAMAGE_TYPES.SACRIFICE) {
       const before = player.hp;
       player.hp = Math.max(options.minHp ?? 1, player.hp - incoming);
