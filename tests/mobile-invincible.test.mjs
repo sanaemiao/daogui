@@ -99,14 +99,18 @@ test("无敌模式：player.invincible=true 时所有伤害类型免疫，关闭
   assert.ok(T.player.hp < hp0, "关闭后正常掉血");
 });
 
-test("无敌模式：startNewRun 从首页勾选读取 invincible", async () => {
-  const { T, elements } = await loadGame();
-  elements.invincibleChk.checked = true;
+test("无敌模式：封面按钮显式指定模式，无参数 startNewRun 沿用本局模式", async () => {
+  const { T } = await loadGame();
+  T.startNewRun("normal");
+  assert.equal(T.player.invincible, false, "普通模式不无敌");
+  T.startNewRun("invincible");
+  assert.equal(T.player.invincible, true, "无敌模式开局");
+  // 再来一局/重开沿用：无参数 startNewRun 走 state.mode
   T.startNewRun();
-  assert.equal(T.player.invincible, true, "勾选后进入无敌模式");
-  elements.invincibleChk.checked = false;
+  assert.equal(T.player.invincible, true, "无参数 startNewRun 沿用本局无敌模式");
+  T.startNewRun("normal");
   T.startNewRun();
-  assert.equal(T.player.invincible, false, "未勾选为普通模式");
+  assert.equal(T.player.invincible, false, "无参数 startNewRun 沿用本局普通模式");
 });
 
 test("苍蜣登阶：未习得/冷却/气血不足时给出明确反馈", async () => {

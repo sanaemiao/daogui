@@ -14,6 +14,8 @@ canvas{display:block;width:100vw;height:100vh;background:radial-gradient(circle,
 #pauseBtn{display:none;position:fixed;right:10px;bottom:98px;z-index:15;width:52px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.45);color:#eee;font-size:14px}
 #dengjieBtn{display:none;position:fixed;right:12px;bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:16;width:80px;height:44px;border-radius:12px;border:2px solid rgba(90,160,130,.6);background:rgba(0,0,0,.6);color:#7fe0b0;font-size:13px;font-weight:bold;pointer-events:auto}
 #dengjieBtn:disabled{opacity:.42;filter:grayscale(.75);cursor:not-allowed;border-color:rgba(130,130,130,.45);color:#9aa}
+#restartNowBtn{display:none;position:fixed;left:22px;top:calc(100vh - 240px);z-index:15;width:62px;height:40px;border-radius:10px;border:2px solid rgba(140,120,90,.5);background:rgba(0,0,0,.55);color:#e0cfa8;font-size:13px;font-weight:bold;pointer-events:auto}
+#restartNowBtn:active{transform:scale(.96)}
 #joystick{position:fixed;left:22px;top:calc(100vh - 128px);z-index:15;width:96px;height:96px;opacity:.28;transition:opacity .12s;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)}
 #stick{position:absolute;left:32px;top:32px;width:32px;height:32px;border-radius:50%;background:rgba(255,220,170,.58);box-shadow:0 0 18px rgba(255,210,150,.3)}
 #debugHud{display:none;position:fixed;left:10px;bottom:10px;z-index:30;padding:8px 10px;border:1px solid rgba(130,220,255,.35);border-radius:9px;background:rgba(0,0,0,.72);color:#aee8ff;font:12px/1.45 Consolas,monospace;pointer-events:none;white-space:pre}
@@ -45,12 +47,14 @@ canvas{display:block;width:100vw;height:100vh;background:radial-gradient(circle,
 <div id="debugHud"></div>
 <button id="pauseBtn">暂停</button>
 <button id="dengjieBtn">登阶</button>
+<button id="restartNowBtn">重开</button>
 <div id="joystick"><div id="stick"></div></div>
 
 <div id="startPanel">
   <div class="panel">
-    <label class="invincibleOpt" style="display:block;margin:12px auto 4px;width:fit-content;color:#ffd58a;cursor:pointer;font-weight:bold"><input type="checkbox" id="invincibleChk" /> 无敌模式（免疫一切伤害）</label>
+    <h1 class="coverTitle" style="color:#ffe3b0;font-size:34px;margin:2px 0 20px;text-shadow:0 3px 10px #000">李火旺割草</h1>
     <button class="mainBtn" id="startBtn">开始游戏</button>
+    <button class="mainBtn" id="invincibleBtn">无敌模式</button>
   </div>
 </div>
 
@@ -66,6 +70,7 @@ canvas{display:block;width:100vw;height:100vh;background:radial-gradient(circle,
     <h1 id="endTitle">游戏结束</h1>
     <p id="endText" class="hint"></p>
     <button class="mainBtn" id="restartBtn" type="button">再来一局</button>
+    <button class="mainBtn" id="toTitleBtn" type="button">回到标题</button>
   </div>
 </div>
 
@@ -83,7 +88,7 @@ const ui=document.getElementById('ui'),skillsUi=document.getElementById('skills'
 const debugHud=document.getElementById('debugHud');
 const startPanel=document.getElementById('startPanel'),levelPanel=document.getElementById('levelPanel'),levelOptions=document.getElementById('levelOptions');
 const endPanel=document.getElementById('endPanel'),endTitle=document.getElementById('endTitle'),endText=document.getElementById('endText'),restartBtn=document.getElementById('restartBtn');
-const pauseBtn=document.getElementById('pauseBtn'),dengjieBtn=document.getElementById('dengjieBtn'),joystick=document.getElementById('joystick'),stick=document.getElementById('stick');
+const pauseBtn=document.getElementById('pauseBtn'),dengjieBtn=document.getElementById('dengjieBtn'),restartNowBtn=document.getElementById('restartNowBtn'),joystick=document.getElementById('joystick'),stick=document.getElementById('stick');
 
 const ENEMY_SPRITES=Object.fromEntries(Object.entries(CONFIG.sprites).map(([id,def])=>[id,{...def}]));
 for(const def of Object.values(ENEMY_SPRITES)){def.image=new Image();def.image.src=def.src}
@@ -126,7 +131,7 @@ const joy={x:0,y:0,active:false,id:null,cx:74,cy:innerHeight-74};
 addEventListener('pointerdown',e=>{
  if(!state.started||state.leveling||state.gameOver)return;
  if(e.pointerType==='mouse')return;
- if(e.target.closest('.panel')||e.target.id==='pauseBtn'||e.target.id==='dengjieBtn')return;
+ if(e.target.closest('.panel')||e.target.id==='pauseBtn'||e.target.id==='dengjieBtn'||e.target.id==='restartNowBtn')return;
  joy.active=true;
  joy.id=e.pointerId;
  joy.cx=e.clientX;
@@ -160,7 +165,7 @@ const d2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
 const MAX_ENEMIES=180;
 const LIMITS={bullets:220,enemyBullets:100,youLaoYe:36,gems:260,effects:180,texts:140};
-const state={started:false,paused:false,manualPause:false,leveling:false,gameOver:false,debug:false,runId:0,tasks:[],time:0,kill:0,lastSpawn:0,phaseIndex:-1,nextFlowEvent:0,milestoneComplete:false,debugJumpIndex:0,camera:{x:0,y:0},rewards:[],revealing:false,rewardPick:[],rewardState:'idle',enemies:[],bullets:[],enemyBullets:[],youLaoYe:[],gems:[],effects:[],texts:[],hitstop:0,shakeX:0,shakeY:0,playerTrail:[]};
+const state={started:false,paused:false,manualPause:false,leveling:false,gameOver:false,mode:'normal',debug:false,runId:0,tasks:[],time:0,kill:0,lastSpawn:0,phaseIndex:-1,nextFlowEvent:0,milestoneComplete:false,debugJumpIndex:0,camera:{x:0,y:0},rewards:[],revealing:false,rewardPick:[],rewardState:'idle',enemies:[],bullets:[],enemyBullets:[],youLaoYe:[],gems:[],effects:[],texts:[],hitstop:0,shakeX:0,shakeY:0,playerTrail:[]};
 const perf={frames:0,elapsed:0,fps:0,hudElapsed:0};
 
 // v10.5 的时间、敌人池、地形、事件与核心成长规则来自外部配置。
@@ -612,6 +617,8 @@ function grantChestReward(){
 
 function damageEnemy(e,dmg){
  if(!player.states.canDamage||e.dead)return;
+ if(!Number.isFinite(dmg)||dmg<=0)return; // P0：非有限伤害入口防御，任何技能异常不得污染敌 HP/使怪不死
+ if(!Number.isFinite(e.hp)||!Number.isFinite(e.maxHp)){e.maxHp=Number.isFinite(e.maxHp)&&e.maxHp>0?e.maxHp:100;e.hp=e.maxHp} // P0：敌 HP 有限兜底（旧档已被污染时修复，杜绝血条空而不死）
  e.hp-=dmg; e.flashTimer=.08; state.texts.push({x:e.x,y:e.y-18,text:Math.floor(dmg),life:.55,color:'#fff0b3'});
  if(e.elite||e.boss)state.hitstop=.04;
  if(e.hp<=0)killEnemy(e);
@@ -1854,16 +1861,25 @@ function endGame(win,text){
  state.gameOver=true;state.paused=true;state.leveling=false;state.manualPause=false;state.tasks.length=0;
  player.hp=Math.max(0,player.hp);
  keys.clear();resetStick();
- pauseBtn.style.display='none';dengjieBtn.style.display='none';levelPanel.style.display='none';
- endTitle.textContent=win?'通关':'游戏结束';
+ pauseBtn.style.display='none';dengjieBtn.style.display='none';restartNowBtn.style.display='none';levelPanel.style.display='none';
+ endTitle.textContent=win?'通关':'死亡';
  const t=Math.floor(state.time);
  let skillsHtml='';
  const ownedWeapons=Object.values(player.weapons).filter(w=>w.lv>0);
  if(ownedWeapons.length){skillsHtml+='<br><span style="color:#ffd58a">武器</span><br>';ownedWeapons.forEach(w=>{skillsHtml+=`${w.evolved?'★':''}${w.name} Lv${w.lv}<br>`})}
  const ownedPassives=Object.values(player.passives).filter(p=>p.lv>0);
  if(ownedPassives.length){skillsHtml+='<br><span style="color:#c8b7a2">被动</span><br>';ownedPassives.forEach(p=>{skillsHtml+=`${p.name} Lv${p.lv}<br>`})}
- endText.innerHTML=`${text}<br><br>存活时间 ${Math.floor(t/60)}分${t%60}秒 · 击杀 ${state.kill} · Lv ${player.level}${skillsHtml}`;
+ const modeLine=state.mode==='invincible'?' · <span style="color:#ff4d6b">无敌模式</span>':'';
+ endText.innerHTML=`${text}<br><br>本局存活时间 ${Math.floor(t/60)}分${t%60}秒 · 击杀 ${state.kill} · Lv ${player.level}${modeLine}${skillsHtml}`;
  endPanel.style.display='flex';
+ updateUI();
+}
+function returnToTitle(){
+ state.started=false;state.paused=false;state.leveling=false;state.gameOver=false;state.manualPause=false;state.tasks.length=0;
+ keys.clear();resetStick();
+ pauseBtn.style.display='none';dengjieBtn.style.display='none';restartNowBtn.style.display='none';
+ levelPanel.style.display='none';endPanel.style.display='none';
+ startPanel.style.display='flex';
  updateUI();
 }
 function autoPause(reason){
@@ -1883,7 +1899,8 @@ function resetPlayerForNewRun(){
  Object.assign(player,fresh);
  COMBAT.ensurePlayerState(player);
 }
-function startNewRun(){
+function startNewRun(mode){
+ if(mode==='normal'||mode==='invincible')state.mode=mode; // 封面两按钮显式指定；再来一局/重开沿用 state.mode
  state.runId++;state.tasks.length=0;
  state.started=true;state.paused=false;state.leveling=false;state.gameOver=false;
  state.manualPause=false;
@@ -1892,17 +1909,20 @@ function startNewRun(){
  state.hitstop=0;state.shakeX=0;state.shakeY=0;state.playerTrail.length=0;
  for(const list of [state.enemies,state.bullets,state.enemyBullets,state.youLaoYe,state.gems,state.effects,state.texts])list.length=0;
  keys.clear();resetStick();resetPlayerForNewRun();
- // 无敌模式：从首页勾选读取（重开沿用当前勾选状态）
- const invChk=document.getElementById('invincibleChk');
- player.invincible=!!(invChk&&invChk.checked);
+ // 无敌模式：由本局 mode 决定（封面按钮显式指定 / 重开沿用本局）
+ player.invincible=state.mode==='invincible';
  document.querySelectorAll('.skipExtra').forEach(el=>el.remove());
  startPanel.style.display='none';levelPanel.style.display='none';endPanel.style.display='none';
  pauseBtn.style.display='block';pauseBtn.textContent='暂停';
+ restartNowBtn.style.display='block';
  dengjieBtn.style.display=player.cangqiang&&player.cangqiang.lv>0?'block':'none';
  last=performance.now();updateUI();showMessage('荒村起雾。');
 }
-document.getElementById('startBtn').addEventListener('click',startNewRun);
-restartBtn.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();startNewRun()});
+document.getElementById('startBtn').addEventListener('click',()=>startNewRun('normal'));
+document.getElementById('invincibleBtn').addEventListener('click',()=>startNewRun('invincible'));
+restartBtn.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();startNewRun(state.mode)});
+restartNowBtn.onclick=()=>{if(!state.started||state.gameOver)return;startNewRun(state.mode)};
+document.getElementById('toTitleBtn').addEventListener('click',event=>{event.preventDefault();event.stopPropagation();returnToTitle()});
 Object.defineProperty(window,'__DAOGUI_V105__',{value:Object.freeze({
  snapshot:()=>({started:state.started,paused:state.paused,leveling:state.leveling,gameOver:state.gameOver,time:state.time,phase:getFlowPhase().label,nextEvent:getNextFlowEvent()?.label||null,player:{x:player.x,y:player.y,hp:player.hp,sacrifice:{last:player.sacrifice.last,total:player.sacrifice.total}},map:{texture:MAP_TEXTURE.src,loaded:MAP_TEXTURE.image.complete&&MAP_TEXTURE.image.naturalWidth>0,obstacles:CONFIG.map.obstacles.length},counts:{enemies:state.enemies.length,bullets:state.bullets.length,enemyBullets:state.enemyBullets.length,effects:state.effects.length,gems:state.gems.length,tasks:state.tasks.length}}),
  sprites:()=>Object.fromEntries(Object.entries(ENEMY_SPRITES).map(([id,def])=>[id,{src:def.src,loaded:def.image.complete&&def.image.naturalWidth>0,width:def.image.naturalWidth,height:def.image.naturalHeight}])),
@@ -1921,7 +1941,7 @@ function loop(now=performance.now()){
  if(accumulator>=SIM_STEP)accumulator=0; // 达步数上限则丢弃积压，防止死亡螺旋
  updateDebugHud();draw();
 }
-startPanel.style.display='flex';updateUI();requestAnimationFrame(loop);
+startPanel.style.display='flex';updateUI();window.__T__={state,player,update,startNewRun,chooseOption,autoTriggerUltimate,triggerCangQiang,updateUI,keys,getLevelOptions,randomNormalOptions,endGame,returnToTitle,damageEnemy,killEnemy};requestAnimationFrame(loop);
 })();
 </script>
 </body>
