@@ -46,7 +46,7 @@ async function loadGame() {
   let script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
   script = script.replace(
     /requestAnimationFrame\(loop\);\s*\}\)\(\);\s*$/,
-    `requestAnimationFrame(loop);window.__T__={state,player,update,autoPause,triggerUltimate,collectGems,startNewRun,togglePause,keys};})();`,
+    `requestAnimationFrame(loop);window.__T__={state,player,update,autoPause,autoTriggerUltimate,collectGems,startNewRun,togglePause,keys};})();`,
   );
   const { sandbox } = buildSandbox();
   const ctx = vm.createContext(sandbox);
@@ -80,41 +80,42 @@ test("自动暂停：失焦后保持暂停，不被安全网复位，手动恢�
   assert.equal(T.state.manualPause, false, "manualPause 复位");
 });
 
-// ============ 置闰五行主动触发 ============
-test("置闰五行：Lv1 即可主动触发，Lv3 更高数值，进入冷却", async () => {
+// ============ 置闰五行自动循环 ============
+test("置闰五行：自动触发——Lv1 强化+45%/-15%/8s，Lv3 更高数值，强化中不重复触发", async () => {
   const { T } = await loadGame();
   T.startNewRun();
+  isolate(T);
   const w = T.player.weapons.ultimate;
   const hp0 = T.player.hp;
-  // Lv1：可触发（+45%/-15%/8s）
+  // Lv1：自动触发（+45%/-15%/8s）
   w.lv = 1; T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
-  T.triggerUltimate();
+  T.update(0.016);
   assert.equal(T.player.ultimateBoost, 8, "Lv1 持续 8s");
-  assert.ok(T.player.hp < hp0, "Lv1 献祭扣血");
-  // Lv3：可触发（+75%/-40%/10s）
+  assert.ok(T.player.hp < hp0, "Lv1 自动献祭扣血");
+  // Lv3：自动触发（+75%/-40%/10s）
   w.lv = 3; T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
   const hp1 = T.player.hp;
-  T.triggerUltimate();
+  T.update(0.016);
   assert.equal(T.player.ultimateBoost, 10, "Lv3 持续 10s");
   assert.equal(T.player.ultimateTimer, 30, "Lv3 进入 30s 祭期冷却");
-  assert.ok(T.player.hp < hp1, "触发献祭扣血");
-  // 冷却中不可重复触发
+  assert.ok(T.player.hp < hp1, "自动触发献祭扣血");
+  // 强化期间 update 不重复触发（boost 不清零不重复献祭）
   const hp2 = T.player.hp;
-  T.triggerUltimate();
-  assert.equal(T.player.hp, hp2, "冷却中不重复扣血");
-  assert.equal(T.player.ultimateBoost, 10, "冷却中不重置强化");
+  T.update(0.016);
+  assert.equal(T.player.hp, hp2, "强化期间不重复献祭");
+  assert.ok(Math.abs(T.player.ultimateBoost - (10 - 0.016)) < 1e-9, "强化期间 boost 正常递减不重置");
 });
 
-test("置闰五行：update 不再自动献祭", async () => {
+test("置闰五行：update 自动献祭并自动触发强化（被动循环）", async () => {
   const { T } = await loadGame();
   T.startNewRun();
   isolate(T);
   const w = T.player.weapons.ultimate;
   w.lv = 3; T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
   const hp0 = T.player.hp;
-  for (let i = 0; i < 10; i++) T.update(0.5);
-  assert.equal(T.player.ultimateBoost, 0, "无自动强化");
-  assert.equal(T.player.hp, hp0, "无自动献祭扣血");
+  T.update(0.016);
+  assert.ok(T.player.ultimateBoost > 0, "update 自动触发强化");
+  assert.ok(T.player.hp < hp0, "自动触发伴随 12% 献祭扣血");
 });
 
 // ============ 经验点吸收无残留 ============

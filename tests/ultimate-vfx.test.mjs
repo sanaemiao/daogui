@@ -46,7 +46,7 @@ async function loadGame() {
   let script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
   script = script.replace(
     /requestAnimationFrame\(loop\);\s*\}\)\(\);\s*$/,
-    `requestAnimationFrame(loop);window.__T__={state,player,update,triggerUltimate,startNewRun,keys};})();`,
+    `requestAnimationFrame(loop);window.__T__={state,player,update,autoTriggerUltimate,startNewRun,keys};})();`,
   );
   const { sandbox, elements } = buildSandbox();
   const ctx = vm.createContext(sandbox);
@@ -61,18 +61,17 @@ function isolate(T) {
   T.state.nextFlowEvent = 999;
 }
 
-test("HUD：强化期显示『置闰五行』+效果/剩余时间，冷却/就绪文案齐全", async () => {
+test("HUD：强化期显示『置闰五行：强化中 Xs』，冷却期显示『置闰五行：下次触发 Xs』", async () => {
   const html = await readFile(GAME, "utf8");
-  assert.match(html, /置闰五行 全伤\+/, "强化行含 置闰五行+全伤");
-  assert.match(html, /置闰五行 冷却 /, "冷却行含 置闰五行 冷却");
-  assert.match(html, /置闰五行 Lv\$/, "就绪行含 置闰五行 Lv");
+  assert.match(html, /置闰五行：强化中 /, "强化行含 置闰五行：强化中");
+  assert.match(html, /置闰五行：下次触发 /, "冷却行含 置闰五行：下次触发");
 });
 
 test("置闰强化特效：boost 期间 ultAura 半径明显（≥37）且多层绘制（可见）", async () => {
   const { T } = await loadGame();
   T.startNewRun(); isolate(T);
   T.player.weapons.ultimate.lv = 1; T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
-  T.triggerUltimate();
+  T.autoTriggerUltimate();
   T.update(0.016);
   const auras = T.state.effects.filter(ef => ef.type === "ultAura");
   assert.ok(auras.length >= 1, "boost 期间有 ultAura");
@@ -86,7 +85,7 @@ test("置闰强化：boost 结束后进入冷却并递减计时", async () => {
   const { T } = await loadGame();
   T.startNewRun(); isolate(T);
   T.player.weapons.ultimate.lv = 1; T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
-  T.triggerUltimate();
+  T.autoTriggerUltimate();
   assert.equal(T.player.ultimateBoost, 8, "Lv1 boost 8s（当前数值保留）");
   for (let i = 0; i < 45; i++) T.update(0.2); // 9s > 8s
   assert.equal(T.player.ultimateBoost, 0, "boost 结束");

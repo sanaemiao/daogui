@@ -46,7 +46,7 @@ async function loadGame() {
   let script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
   script = script.replace(
     /requestAnimationFrame\(loop\);\s*\}\)\(\);\s*$/,
-    `requestAnimationFrame(loop);window.__T__={state,player,update,triggerCangQiang,triggerUltimate,startNewRun,takePlayerHit,keys};})();`,
+    `requestAnimationFrame(loop);window.__T__={state,player,update,triggerCangQiang,autoTriggerUltimate,startNewRun,takePlayerHit,keys};})();`,
   );
   const { sandbox, elements } = buildSandbox();
   const ctx = vm.createContext(sandbox);
@@ -61,10 +61,10 @@ function isolate(T) {
   T.state.nextFlowEvent = 999;
 }
 
-test("移动端：摇杆 pointerdown 不拦截登阶/置闰按钮", async () => {
+test("移动端：摇杆 pointerdown 不拦截登阶按钮（置闰主动按钮已彻底移除）", async () => {
   const html = await readFile(GAME, "utf8");
-  assert.match(html, /e\.target\.id==='ultBtn'/, "pointerdown 排除 ultBtn");
   assert.match(html, /e\.target\.id==='dengjieBtn'/, "pointerdown 排除 dengjieBtn");
+  assert.doesNotMatch(html, /ultBtn/, "置闰主动按钮已彻底移除（无 ultBtn）");
 });
 
 test("置闰强化：boost 期间玩家身上有 ultAura 特效，结束后清除", async () => {
@@ -72,7 +72,7 @@ test("置闰强化：boost 期间玩家身上有 ultAura 特效，结束后清�
   T.startNewRun();
   isolate(T);
   T.player.weapons.ultimate.lv = 1; T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
-  T.triggerUltimate();
+  T.autoTriggerUltimate();
   assert.equal(T.player.ultimateBoost, 8, "boost 生效");
   T.update(0.016);
   assert.ok(T.state.effects.some(ef => ef.type === "ultAura"), "boost 期间有 ultAura");

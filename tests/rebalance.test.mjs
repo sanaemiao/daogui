@@ -46,7 +46,7 @@ async function loadGame() {
   let script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
   script = script.replace(
     /requestAnimationFrame\(loop\);\s*\}\)\(\);\s*$/,
-    `requestAnimationFrame(loop);window.__T__={state,player,triggerCangQiang,triggerUltimate,update,startNewRun,chooseOption,cdMul,atkMul,CONFIG,keys,CANGQIANG_DMG,ULT_BOOST_MUL,ULT_CD_MUL};})();`,
+    `requestAnimationFrame(loop);window.__T__={state,player,triggerCangQiang,autoTriggerUltimate,update,startNewRun,chooseOption,cdMul,atkMul,CONFIG,keys,CANGQIANG_DMG,ULT_BOOST_MUL,ULT_CD_MUL};})();`,
   );
   const { sandbox, elements } = buildSandbox();
   const ctx = vm.createContext(sandbox);
@@ -60,20 +60,19 @@ function mkEnemy(over = {}) {
 }
 
 // ============ 最终规格 ============
-test("置闰五行：Lv1 即可主动施放，全伤+45%/冷却-15%/持续8s，按钮显示", async () => {
-  const { T, elements } = await loadGame();
+test("置闰五行：Lv1 自动触发，全伤+45%/冷却-15%/持续8s，无主动按钮", async () => {
+  const { T } = await loadGame();
   T.startNewRun();
-  T.player.weapons.ultimate.lv = 0;
+  T.player.weapons.ultimate.lv = 1;
   T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
-  T.chooseOption({ type: "weapon", key: "ultimate", title: "获得：置闰五行" }); // lv→1，触发按钮显示
-  assert.equal(elements.ultBtn.style.display, "block", "获得后按钮显示");
-  assert.equal(T.player.weapons.ultimate.lv, 1, "获得后 lv=1");
   const atk0 = T.atkMul(), cd0 = T.cdMul(), hp0 = T.player.hp;
-  elements.ultBtn.onclick(); // Lv1 点击，无门槛
+  T.autoTriggerUltimate();
   assert.equal(T.player.ultimateBoost, 8, "Lv1 持续 8s");
   assert.ok(T.player.hp < hp0, "12% 献祭扣血");
   assert.ok(Math.abs(T.atkMul() / atk0 - 1.45) < 1e-6, `Lv1 全伤+45%（实际 ${((T.atkMul()/atk0)-1)*100}%）`);
   assert.ok(Math.abs(T.cdMul() / cd0 - 0.85) < 1e-6, `Lv1 冷却-15%（实际 ${(1-T.cdMul()/cd0)*100}%）`);
+  const html = await readFile(GAME, "utf8");
+  assert.doesNotMatch(html, /id="ultBtn"/, "HTML 无置闰主动按钮");
 });
 
 test("置闰五行：三层全伤/冷却/持续递增（45/55/75%·15/25/40%·8/9/10s）", async () => {
@@ -84,7 +83,7 @@ test("置闰五行：三层全伤/冷却/持续递增（45/55/75%·15/25/40%·8/
     T.player.weapons.ultimate.lv = lv;
     T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
     const atk0 = T.atkMul(), cd0 = T.cdMul();
-    T.triggerUltimate();
+    T.autoTriggerUltimate();
     assert.ok(Math.abs(T.atkMul() / atk0 - atkRatio) < 1e-6, `Lv${lv} 全伤倍率 ${T.atkMul()/atk0} 应 ${atkRatio}`);
     assert.ok(Math.abs(T.cdMul() / cd0 - cdRatio) < 1e-6, `Lv${lv} 冷却倍率 ${T.cdMul()/cd0} 应 ${cdRatio}`);
     assert.equal(T.player.ultimateBoost, dur, `Lv${lv} 持续 ${dur}s`);
@@ -99,7 +98,7 @@ test("置闰五行：自身祭期 CD 分级 60/45/30s，不吃自身冷却缩减
     T.startNewRun();
     T.player.weapons.ultimate.lv = lv;
     T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
-    T.triggerUltimate();
+    T.autoTriggerUltimate();
     assert.equal(T.player.ultimateTimer, cd, `Lv${lv} 祭期冷却 ${cd}s（不乘 cdMul）`);
   }
 });
@@ -121,7 +120,7 @@ test("苍蜣登阶：各级冷却分级 90/75/60s，不吃置闰冷却缩减", a
   T.startNewRun();
   T.player.weapons.ultimate.lv = 3;
   T.player.ultimateTimer = 0; T.player.ultimateBoost = 0;
-  T.triggerUltimate();
+  T.autoTriggerUltimate();
   assert.ok(T.cdMul() < 1, "置闰强化中 cdMul<1");
   T.player.cangqiang.lv = 1; T.player.cangqiang.cd = 0;
   T.player.hp = T.player.maxHp;
@@ -180,9 +179,11 @@ test("苍蜣登阶：保留 30% 最大气血代价与 Boss 系数 0.4", async ()
   assert.ok(Math.abs(T.player.hp - (hpBefore - T.player.maxHp * 0.3)) < 1e-6, `消耗 30% maxHp（实际 ${hpBefore - T.player.hp}）`);
 });
 
-test("HUD：置闰五行不再出现“未解锁”，按等级显示全伤/冷却", async () => {
+test("HUD：置闰五行强化/下次触发文案齐全，按钳制等级显示全伤/冷却", async () => {
   const html = await readFile(GAME, "utf8");
   assert.doesNotMatch(html, /未解锁/, "HUD 不再写未解锁");
-  assert.match(html, /ULT_BOOST_MUL\[player\.weapons\.ultimate\.lv\]/, "HUD 全伤按等级");
-  assert.match(html, /ULT_CD_MUL\[player\.weapons\.ultimate\.lv\]/, "HUD 冷却按等级");
+  assert.match(html, /置闰五行：强化中 /, "HUD 强化中文案");
+  assert.match(html, /置闰五行：下次触发 /, "HUD 下次触发文案");
+  assert.match(html, /ULT_BOOST_MUL\[ultLv\(\)\]/, "HUD 全伤按钳制等级");
+  assert.match(html, /ULT_CD_MUL\[ultLv\(\)\]/, "HUD 冷却按钳制等级");
 });
