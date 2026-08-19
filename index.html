@@ -16,7 +16,6 @@ canvas{display:block;width:100vw;height:100vh;background:radial-gradient(circle,
 #dengjieBtn{display:none;position:fixed;left:22px;top:calc(100vh - 296px);z-index:15;width:60px;height:40px;border-radius:10px;border:2px solid rgba(90,160,130,.5);background:rgba(0,0,0,.55);color:#7fe0b0;font-size:12px;font-weight:bold;pointer-events:auto}
 #joystick{position:fixed;left:22px;top:calc(100vh - 128px);z-index:15;width:96px;height:96px;opacity:.28;transition:opacity .12s;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)}
 #stick{position:absolute;left:32px;top:32px;width:32px;height:32px;border-radius:50%;background:rgba(255,220,170,.58);box-shadow:0 0 18px rgba(255,210,150,.3)}
-#controlsHint{display:none;position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:10;padding:7px 12px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(0,0,0,.36);color:#cdbda9;font-size:12px;pointer-events:none;white-space:nowrap}
 #debugHud{display:none;position:fixed;left:10px;bottom:10px;z-index:30;padding:8px 10px;border:1px solid rgba(130,220,255,.35);border-radius:9px;background:rgba(0,0,0,.72);color:#aee8ff;font:12px/1.45 Consolas,monospace;pointer-events:none;white-space:pre}
 #levelPanel,#startPanel,#endPanel{position:fixed;inset:0;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,.74);z-index:20;padding:16px}
 .panel{width:min(760px,94vw);max-height:92vh;overflow:auto;padding:22px;border-radius:18px;background:#1d1a19;border:1px solid #6b4d3c;box-shadow:0 12px 40px rgba(0,0,0,.6);text-align:center}
@@ -27,22 +26,15 @@ canvas{display:block;width:100vw;height:100vh;background:radial-gradient(circle,
 .option b{display:block;color:#ffd58a;font-size:17px;margin-bottom:8px}
 .mainBtn{min-height:auto;margin-top:14px;padding:12px 24px;font-size:16px}
 .hint{color:#c8b7a2;font-size:14px;line-height:1.8}
-.bossRefs{margin:16px auto 0;max-width:580px;border:1px solid rgba(178,137,87,.35);border-radius:12px;background:rgba(0,0,0,.18);padding:10px 12px;text-align:left}
-.bossRefs summary{cursor:pointer;color:#d7b77e;text-align:center;font-size:13px}
-.bossRefGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
-.bossRefCard{margin:0;padding:8px;border-radius:10px;background:rgba(255,255,255,.035);text-align:center;color:#bfae98;font-size:12px}
-.bossRefCard img{display:block;width:100%;height:150px;object-fit:contain;image-rendering:pixelated;border-radius:8px;background:rgba(0,0,0,.22)}
 @media (pointer:fine) and (min-width:900px){
  #ui{left:18px;top:14px;font-size:14px;line-height:1.5;max-width:280px}
  #skills{right:18px;top:14px;width:300px;font-size:12px;line-height:1.45}
  #message{top:9%;font-size:21px;width:70vw}
  #pauseBtn{right:20px;bottom:20px;width:72px;height:38px}
  #joystick{display:none}
- #controlsHint{display:block}
  .panel{width:min(820px,86vw);padding:28px}
 }
 @media (max-width:760px){.options{grid-template-columns:1fr}.option{min-height:78px}#skills{font-size:10px}#ui{font-size:11px}}
-@media (max-width:520px){.bossRefGrid{grid-template-columns:1fr}.bossRefCard img{height:120px}}
 </style>
 </head>
 <body>
@@ -50,7 +42,6 @@ canvas{display:block;width:100vw;height:100vh;background:radial-gradient(circle,
 <div id="ui"></div>
 <div id="skills"></div>
 <div id="message"></div>
-<div id="controlsHint">WASD / 方向键移动　空格 / P 暂停　F3 性能信息　F4 跳到下一测试节点</div>
 <div id="debugHud"></div>
 <button id="pauseBtn">暂停</button>
 <button id="ultBtn">置闰五行</button>
@@ -59,30 +50,6 @@ canvas{display:block;width:100vw;height:100vh;background:radial-gradient(circle,
 
 <div id="startPanel">
   <div class="panel">
-    <h1>《李火旺割草 Demo v10.5》</h1>
-    <p class="hint">
-      第一关 0—10 分钟构筑版：荒村地形会限制走位，2:30 丹阳子精英、5:00 腊月十八小Boss、6:30 喜神精英、10:00 三花丹阳子。<br>本版加入大千录三祭合流、火袄蜒行、置闰五行与献目定形。<br>
-      普通攻击是「铜钱剑」，自动发射。敌人会从屏幕边缘附近出现。<br>
-      土匪负责追击，药人缓慢挤压，裂面邪祟会预警扑击，游魂会漂移或整队横穿。<br>
-      2:00 是土匪冲阵，4:00 是游魂过境。<br>
-      「游老爷」会以多缕游魂线条绕弧线追敌，低等级也能直接辨认。<br>
-      左上角会显示当前阶段和下一个事件节点。<br>
-      电脑使用 WASD / 方向键移动，空格或 P 暂停，F3 性能信息，F4 跳到下一测试节点。<br>
-      手机仍可使用浮动摇杆；鼠标点击不会误触虚拟摇杆。
-    </p>
-    <details class="bossRefs">
-      <summary>后续 Boss 概念图（旧素材暂存，不代表最终战斗造型）</summary>
-      <div class="bossRefGrid">
-        <figure class="bossRefCard">
-          <img src="assets/legacy-reference-v1/丹阳子三花聚顶.png" alt="丹阳子三花聚顶旧概念图">
-          <figcaption>丹阳子三花聚顶 · 后续需拆分战斗帧</figcaption>
-        </figure>
-        <figure class="bossRefCard">
-          <img src="assets/legacy-reference-v1/腊月十八.png" alt="腊月十八旧概念图">
-          <figcaption>腊月十八 · 后续 Boss 形态参考</figcaption>
-        </figure>
-      </div>
-    </details>
     <label class="invincibleOpt" style="display:block;margin:12px auto 4px;width:fit-content;color:#ffd58a;cursor:pointer;font-weight:bold"><input type="checkbox" id="invincibleChk" /> 无敌模式（免疫一切伤害）</label>
     <button class="mainBtn" id="startBtn">开始游戏</button>
   </div>

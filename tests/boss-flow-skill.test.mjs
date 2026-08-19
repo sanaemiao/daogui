@@ -344,19 +344,18 @@ test("旧路径确认：eliteXishen/bossDanyangzi 不被新流程调用", async 
   assert.match(cfgSrc, /kind: "sanhua"[^\n]*600|kind: "layue"/, "新流程仅 layue/sanhua/renxiao/danyangzi-elite");
 });
 
-test("封面说明：含当前流程时间线，无旧时间线/旧占位", async () => {
+test("封面说明已精简：首页不再展示玩法说明/旧占位（流程时间线由 config 覆盖）", async () => {
   const html = await readFile(GAME, "utf8");
-  const cover = html.match(/第一关 0—10 分钟构筑版[^<]*/)[0];
-  // 当前流程
-  assert.match(cover, /2:30 丹阳子精英/, "封面 2:30 丹阳子精英");
-  assert.match(cover, /5:00 腊月十八小Boss/, "封面 5:00 腊月十八小Boss");
-  assert.match(cover, /6:30 喜神精英/, "封面 6:30 喜神精英");
-  assert.match(cover, /10:00 三花丹阳子/, "封面 10:00 三花丹阳子");
-  // 无旧时间线/旧占位
-  assert.doesNotMatch(cover, /人魈道人（黑太岁图占位）/, "无黑太岁图占位表述");
-  assert.doesNotMatch(cover, /2:30 人魈道人/, "无旧 2:30 人魈道人");
-  assert.doesNotMatch(cover, /6:30 人魈道人/, "无旧 6:30 人魈道人");
-  assert.doesNotMatch(cover, /5:00 丹阳子/, "无旧 5:00 丹阳子");
+  // 首页 startPanel 已精简：无玩法说明段落、无封面标题、无 Boss 参考图、无按键提示
+  assert.doesNotMatch(html, /<p class="hint">第一关 0—10 分钟/, "首页玩法说明段落移除");
+  assert.doesNotMatch(html, /<h1>《李火旺割草/, "首页标题移除");
+  assert.doesNotMatch(html, /class="bossRefs"/, "Boss 参考图移除");
+  assert.doesNotMatch(html, /id="controlsHint"/, "按键提示移除");
+  // 当前流程时间线仍由 config 保证（Boss 顺序测试已覆盖 150/300/390/600）
+  const cfg = await readFile(CFG, "utf8");
+  assert.match(cfg, /at: 150.*kind: "danyangzi"/, "150s 丹阳子精英在 config");
+  assert.match(cfg, /at: 390.*kind: "xishen"/, "390s 喜神在 config");
+  assert.match(cfg, /at: 600.*kind: "sanhua"/, "600s 三花在 config");
 });
 
 // ============ 390s 喜神精英（散签/牵线/引偶）============
